@@ -1,0 +1,105 @@
+export type EventCategory = 
+  | 'Hackathon' 
+  | 'Workshop' 
+  | 'Tech Talk' 
+  | 'Coding Contest' 
+  | 'Project Expo'
+  | 'Networking';
+
+export type EventStatus = 'Upcoming' | 'Live' | 'Completed' | 'Draft';
+
+export interface Speaker {
+  name: string;
+  role: string;
+  organization: string;
+  avatar: string;
+}
+
+export interface ScheduleItem {
+  time: string;
+  title: string;
+  description?: string;
+}
+
+export interface ClubEvent {
+  id: string;
+  title: string;
+  slug: string;
+  category: EventCategory;
+  status: EventStatus;
+  shortDescription: string;
+  description: string;
+  date: string;
+  time: string;
+  venue: string;
+  capacity: number;
+  registeredCount: number;
+  image: string;
+  tags: string[];
+  prerequisites: string[];
+  fee: 'Free' | string;
+  speaker: Speaker;
+  schedule: ScheduleItem[];
+  organizer: string;
+  createdAt: string;
+}
+
+export interface EventRegistration {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  studentName: string;
+  rollNo: string;
+  email: string;
+  phone: string;
+  department: string;
+  year: string;
+  status: 'Confirmed' | 'Attended' | 'Cancelled';
+  ticketCode: string;
+  registeredAt: string;
+  specialRequests?: string;
+}
+
+export interface EventMemory {
+  id: string;
+  title: string;
+  year: string;
+  date: string;
+  category: EventCategory;
+  description: string;
+  image: string;
+  attendeesCount: number;
+  winners?: string[];
+  highlights: string[];
+  createdAt: string;
+}
+
+export interface GalleryPhoto {
+  id: string;
+  title: string;
+  caption: string;
+  imageUrl: string;
+  eventName?: string;
+  year: string;
+  createdAt: string;
+}
+
+export interface Announcement {
+  id: string;
+  content: string;
+  type: 'info' | 'urgent' | 'highlight';
+  active: boolean;
+  linkText?: string;
+  linkUrl?: string;
+  createdAt: string;
+}
+
+export interface UserSession {
+  role: 'guest' | 'student' | 'admin';
+  studentInfo?: {
+    name: string;
+    rollNo: string;
+    email: string;
+  };
+  adminEmail?: string;
+}

@@ -1,0 +1,138 @@
+import React from 'react';
+import { Calendar, Clock, MapPin, Users, ArrowRight, Tag } from 'lucide-react';
+import type { ClubEvent } from '../types';
+
+
+interface EventCardProps {
+  event: ClubEvent;
+  onSelectEvent: (event: ClubEvent) => void;
+  onRegisterEvent: (event: ClubEvent) => void;
+}
+
+export const EventCard: React.FC<EventCardProps> = ({
+  event,
+  onSelectEvent,
+  onRegisterEvent
+}) => {
+  const isFull = event.registeredCount >= event.capacity;
+  const isCompleted = event.status === 'Completed';
+
+  // Category badge styling
+  const getCategoryBadgeClass = (category: string) => {
+    switch (category) {
+      case 'Hackathon': return 'badge-purple';
+      case 'Workshop': return 'badge-cyan';
+      case 'Coding Contest': return 'badge-green';
+      default: return 'badge-amber';
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    if (status === 'Live') return <span className="badge badge-green" style={{ background: 'rgba(16,185,129,0.2)' }}><span className="pulse-dot"></span> LIVE NOW</span>;
+    if (status === 'Upcoming') return <span className="badge badge-cyan">UPCOMING</span>;
+    return <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#94a3b8' }}>COMPLETED</span>;
+  };
+
+  const seatPercent = Math.min(100, Math.round((event.registeredCount / event.capacity) * 100));
+
+  return (
+    <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+      
+      {/* Event Header Banner Image */}
+      <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+        <img 
+          src={event.image} 
+          alt={event.title} 
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+          onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0f172a 0%, transparent 60%)' }} />
+        
+        {/* Top Badges */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className={`badge ${getCategoryBadgeClass(event.category)}`}>
+            <Tag size={10} /> {event.category}
+          </span>
+          {getStatusBadge(event.status)}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        
+        <h3 
+          onClick={() => onSelectEvent(event)} 
+          style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.65rem', cursor: 'pointer', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        >
+          {event.title}
+        </h3>
+
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
+          {event.shortDescription}
+        </p>
+
+        {/* Date & Location Grid */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '1.25rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Calendar size={14} color="#00f2fe" />
+            <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={14} color="#4facfe" />
+            <span>{event.time}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <MapPin size={14} color="#7928ca" />
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.venue}</span>
+          </div>
+        </div>
+
+        {/* Seat Fill Progress Bar */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}><Users size={12} /> Seats Booked</span>
+            <span style={{ fontWeight: 600, color: isFull ? '#ef4444' : '#00f2fe' }}>
+              {event.registeredCount} / {event.capacity} ({seatPercent}%)
+            </span>
+          </div>
+          <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ 
+              width: `${seatPercent}%`, 
+              height: '100%', 
+              background: isFull ? '#ef4444' : 'linear-gradient(90deg, #00f2fe 0%, #4facfe 100%)',
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={() => onSelectEvent(event)} 
+            className="btn btn-secondary btn-sm"
+            style={{ flex: 1 }}
+          >
+            Details
+          </button>
+          
+          <button 
+            onClick={() => onRegisterEvent(event)} 
+            disabled={isFull || isCompleted}
+            className={`btn btn-sm ${isCompleted ? 'btn-secondary' : 'btn-primary'}`}
+            style={{ flex: 1.2, opacity: (isFull || isCompleted) ? 0.6 : 1, cursor: (isFull || isCompleted) ? 'not-allowed' : 'pointer' }}
+          >
+            {isCompleted ? (
+              <>Ended</>
+            ) : isFull ? (
+              <>House Full</>
+            ) : (
+              <>Register <ArrowRight size={14} /></>
+            )}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
