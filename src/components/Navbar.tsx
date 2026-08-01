@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, LogOut, Menu, X, Bell, UserCheck, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { LogOut, Menu, X, Bell, UserCheck, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import type { Announcement, UserSession } from '../types';
+import gitsLogo from '../assets/gits-logo.jpg';
 import '../Navbar.css';
 
 interface NavbarProps {
@@ -96,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             whileTap={{ scale: 0.97 }}
           >
             <div className="navbar__logo-icon">
-              <Terminal size={20} strokeWidth={2.3} />
+              <img src={gitsLogo} alt="GITS Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '13px' }} />
             </div>
             <div className="navbar__logo-text-wrap">
               <span className="navbar__logo-text">GITS</span>

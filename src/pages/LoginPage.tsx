@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, ShieldCheck, Info, ArrowRight } from 'lucide-react';
 import type { UserSession } from '../types';
+import gitsLogo from '../assets/gits-logo.jpg';
 
 interface LoginPageProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -49,9 +50,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', background: 'radial-gradient(circle at top, rgba(0,242,254,0.12), transparent 35%), linear-gradient(135deg, rgba(2,6,23,1) 0%, rgba(15,23,42,1) 100%)' }}>
       <div style={{ width: '100%', maxWidth: '520px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 30px 80px rgba(0,0,0,0.35)', background: 'rgba(10, 14, 25, 0.88)', backdropFilter: 'blur(24px)' }}>
-        <div style={{ padding: '1.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(121, 40, 202, 0.15) 100%)' }}>
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', marginBottom: '0.35rem' }}>GITS Club Portal Login</h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Login first to unlock the full portal experience.</p>
+        <div style={{ padding: '1.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(121, 40, 202, 0.15) 100%)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <img src={gitsLogo} alt="GITS Logo" style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', boxShadow: '0 0 20px rgba(0, 242, 254, 0.3)', border: '1px solid rgba(0, 242, 254, 0.2)', flexShrink: 0 }} />
+          <div>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', marginBottom: '0.35rem' }}>GITS Club Portal Login</h1>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Login first to unlock the full portal experience.</p>
+          </div>
         </div>
 
         <div style={{ padding: '1.75rem' }}>

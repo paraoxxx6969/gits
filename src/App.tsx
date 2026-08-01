@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Preloader from './components/ui/preloader';
 import { StorageService } from './services/storageService';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession } from './types';
 
@@ -32,6 +33,11 @@ export const App: React.FC = () => {
   const [registeringEvent, setRegisteringEvent] = useState<ClubEvent | null>(null);
   const [generatedPass, setGeneratedPass] = useState<{ registration: EventRegistration; event: ClubEvent } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [showPreloader, setShowPreloader] = useState<boolean>(true);
+
+  const handlePreloaderComplete = useCallback(() => {
+    setShowPreloader(false);
+  }, []);
 
   const refreshData = () => {
     setEvents(StorageService.getEvents());
@@ -82,11 +88,17 @@ export const App: React.FC = () => {
   };
 
   if (!isAuthenticated && userSession.role === 'guest') {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      </>
+    );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
       
       {/* Top Header with Embedded Apple MacBook Animated Logo Dock */}
       <Navbar 
