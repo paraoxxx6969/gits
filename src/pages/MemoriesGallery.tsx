@@ -34,6 +34,7 @@ interface MemoriesGalleryProps {
 
 export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
   const [images, setImages] = useState<ImageData[]>([]);
+  const [photoCount, setPhotoCount] = useState(0);
 
   // Prevent vertical page scroll on memory globe page
   useEffect(() => {
@@ -45,24 +46,26 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
 
   useEffect(() => {
     const storedPhotos = StorageService.getGalleryPhotos();
+    setPhotoCount(storedPhotos.length);
 
     const generatedImages: ImageData[] = [];
-    const totalCount = Math.max(60, storedPhotos.length);
+    const totalCount = 60;
 
     for (let i = 0; i < totalCount; i++) {
-      if (storedPhotos.length > 0 && i < storedPhotos.length) {
+      if (storedPhotos.length > 0) {
+        // Cycle stored photos across all 60 nodes on the 3D sphere
+        const photo = storedPhotos[i % storedPhotos.length];
         generatedImages.push({
-          id: storedPhotos[i].id || `globe-img-${i + 1}`,
-          src: storedPhotos[i].imageUrl,
-          alt: storedPhotos[i].title,
-          title: storedPhotos[i].title,
+          id: `globe-node-${i + 1}`,
+          src: photo.imageUrl,
+          alt: photo.title,
+          title: photo.eventName ? `${photo.title} • ${photo.eventName}` : photo.title,
         });
       } else {
-        const idx = i - storedPhotos.length;
-        const fallbackUrl = UNSPLASH_POOL[idx % UNSPLASH_POOL.length];
-        const fallbackTitle = EVENT_TITLES[idx % EVENT_TITLES.length];
+        const fallbackUrl = UNSPLASH_POOL[i % UNSPLASH_POOL.length];
+        const fallbackTitle = EVENT_TITLES[i % EVENT_TITLES.length];
         generatedImages.push({
-          id: `globe-img-${i + 1}`,
+          id: `globe-node-${i + 1}`,
           src: fallbackUrl,
           alt: fallbackTitle,
           title: fallbackTitle,
@@ -84,6 +87,30 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
       position: 'relative',
       background: 'radial-gradient(circle at 50% 50%, rgba(121, 40, 202, 0.15) 0%, rgba(8, 12, 20, 1) 70%)',
     }}>
+      {/* Floating Info Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 100,
+        background: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(0, 242, 254, 0.3)',
+        padding: '0.5rem 1.25rem',
+        borderRadius: '30px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        pointerEvents: 'none'
+      }}>
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f2fe', boxShadow: '0 0 10px #00f2fe' }} />
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', letterSpacing: '0.02em' }}>
+          Interactive 3D Memory Globe ({photoCount} Photos Loaded)
+        </span>
+      </div>
+
       <SphereImageGrid
         images={images}
         containerSize={780}
