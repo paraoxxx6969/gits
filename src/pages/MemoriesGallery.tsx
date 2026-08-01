@@ -78,12 +78,12 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
     }}>
       <SphereImageGrid
         images={images}
-        containerSize={620}
-        sphereRadius={225}
+        containerSize={780}
+        sphereRadius={300}
         dragSensitivity={0.8}
         momentumDecay={0.96}
         maxRotationSpeed={6}
-        baseImageScale={0.15}
+        baseImageScale={0.16}
         hoverScale={1.3}
         perspective={1000}
         autoRotate={true}
