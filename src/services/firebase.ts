@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider, 
   GithubAuthProvider, 
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   type Auth,
   type UserCredential
 } from 'firebase/auth';
@@ -38,7 +40,7 @@ export interface OAuthUserResult {
   email: string;
   photoURL?: string;
   rollNo: string;
-  provider: 'google' | 'github';
+  provider: 'google' | 'github' | 'email';
 }
 
 /**
@@ -46,7 +48,6 @@ export interface OAuthUserResult {
  */
 export async function signInWithGoogle(): Promise<OAuthUserResult> {
   if (!isFirebaseConfigured || !auth) {
-    // Demo fallback mode when Firebase environment variables are not yet set up
     await new Promise(res => setTimeout(res, 800));
     return {
       name: "Alex Morgan (Google)",
@@ -59,8 +60,6 @@ export async function signInWithGoogle(): Promise<OAuthUserResult> {
 
   const result: UserCredential = await signInWithPopup(auth, googleProvider);
   const user = result.user;
-  
-  // Extract roll number or generate formatted ID
   const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
 
   return {
@@ -77,7 +76,6 @@ export async function signInWithGoogle(): Promise<OAuthUserResult> {
  */
 export async function signInWithGithub(): Promise<OAuthUserResult> {
   if (!isFirebaseConfigured || !auth) {
-    // Demo fallback mode when Firebase environment variables are not yet set up
     await new Promise(res => setTimeout(res, 800));
     return {
       name: "Alex Morgan (GitHub)",
@@ -90,7 +88,6 @@ export async function signInWithGithub(): Promise<OAuthUserResult> {
 
   const result: UserCredential = await signInWithPopup(auth, githubProvider);
   const user = result.user;
-
   const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
 
   return {
@@ -99,5 +96,44 @@ export async function signInWithGithub(): Promise<OAuthUserResult> {
     photoURL: user.photoURL || undefined,
     rollNo: derivedRoll,
     provider: 'github'
+  };
+}
+
+/**
+ * Sign in / Register with Email and Password
+ */
+export async function signInWithEmailPassword(email: string, pass: string): Promise<OAuthUserResult> {
+  if (!isFirebaseConfigured || !auth) {
+    await new Promise(res => setTimeout(res, 600));
+    const nameFromEmail = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return {
+      name: nameFromEmail || "Student User",
+      email: email,
+      rollNo: `23IT${Math.floor(1000 + Math.random() * 9000)}`,
+      provider: 'email'
+    };
+  }
+
+  let userCredential: UserCredential;
+  try {
+    userCredential = await signInWithEmailAndPassword(auth, email, pass);
+  } catch (err: any) {
+    if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
+      // Create user if not registered yet
+      userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    } else {
+      throw err;
+    }
+  }
+
+  const user = userCredential.user;
+  const nameFromEmail = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
+
+  return {
+    name: user.displayName || nameFromEmail || 'Student User',
+    email: user.email || email,
+    rollNo: derivedRoll,
+    provider: 'email'
   };
 }

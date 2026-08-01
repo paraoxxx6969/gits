@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, Info, ArrowRight, Loader2 } from 'lucide-react';
+import { User, ShieldCheck, Info, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
 import type { UserSession } from '../types';
 import gitsLogo from '../assets/gits-logo.jpg';
-import { signInWithGoogle, signInWithGithub, isFirebaseConfigured } from '../services/firebase';
+import { signInWithGoogle, signInWithGithub, signInWithEmailPassword, isFirebaseConfigured } from '../services/firebase';
 
 interface LoginPageProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -10,13 +10,17 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [loginMode, setLoginMode] = useState<'select' | 'student' | 'admin'>('select');
-  const [studentName, setStudentName] = useState('Alex Morgan');
-  const [studentRollNo, setStudentRollNo] = useState('23IT1042');
+  
+  // Student Email & Password State
   const [studentEmail, setStudentEmail] = useState('alex@student.gits.edu');
+  const [studentPassword, setStudentPassword] = useState('student123');
+  
+  // Admin Credentials State
   const [adminEmail, setAdminEmail] = useState('admin@gits.edu');
   const [adminPassword, setAdminPassword] = useState('admin123');
+  
   const [error, setError] = useState('');
-  const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | 'email' | null>(null);
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
     try {
@@ -43,22 +47,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleStudentSubmit = (e: React.FormEvent) => {
+  const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentName.trim() || !studentRollNo.trim() || !studentEmail.trim()) {
-      setError('Please fill in your student details.');
+    if (!studentEmail.trim() || !studentPassword.trim()) {
+      setError('Please enter your email and password.');
       return;
     }
 
-    setError('');
-    onLoginSuccess({
-      role: 'student',
-      studentInfo: {
-        name: studentName.trim(),
-        rollNo: studentRollNo.trim().toUpperCase(),
-        email: studentEmail.trim()
-      }
-    });
+    try {
+      setLoadingProvider('email');
+      setError('');
+      const result = await signInWithEmailPassword(studentEmail.trim(), studentPassword.trim());
+
+      onLoginSuccess({
+        role: 'student',
+        studentInfo: {
+          name: result.name,
+          rollNo: result.rollNo,
+          email: result.email
+        }
+      });
+    } catch (err: any) {
+      console.error('Firebase Email/Password error:', err);
+      setError(err?.message || 'Invalid email or password. Please try again.');
+    } finally {
+      setLoadingProvider(null);
+    }
   };
 
   const handleAdminSubmit = (e: React.FormEvent) => {
@@ -100,7 +114,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.2rem' }}>Login as Student</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Google, GitHub, or Student ID login.</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Google, GitHub, or Email & Password authentication.</p>
                 </div>
                 <ArrowRight size={18} color="#00f2fe" />
               </div>
@@ -135,7 +149,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
               {error && <div style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', padding: '0.65rem 0.85rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1.25rem', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>}
 
-              {/* OAuth Social Buttons */}
+              {/* OAuth Social Buttons (Google & GitHub) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
                 
                 {/* Google Login Button */}
@@ -216,30 +230,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', margin: '1.25rem 0', gap: '0.75rem' }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>or enter student id</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>or email and password</span>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
               </div>
 
-              {/* Manual Form Entry */}
-              <form onSubmit={handleStudentSubmit}>
+              {/* Email & Password Authentication Form */}
+              <form onSubmit={handleEmailPasswordSubmit}>
                 <div className="form-group">
-                  <label className="form-label">Full Name *</label>
-                  <input type="text" required className="form-input" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Mail size={14} color="#00f2fe" /> Student Email *
+                  </label>
+                  <input 
+                    type="email" 
+                    required 
+                    className="form-input" 
+                    placeholder="student@gits.edu" 
+                    value={studentEmail} 
+                    onChange={(e) => setStudentEmail(e.target.value)} 
+                  />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Roll No / Student ID *</label>
-                  <input type="text" required className="form-input" placeholder="e.g. 23IT1042" value={studentRollNo} onChange={(e) => setStudentRollNo(e.target.value)} />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Student Email *</label>
-                  <input type="email" required className="form-input" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} />
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Lock size={14} color="#00f2fe" /> Password *
+                  </label>
+                  <input 
+                    type="password" 
+                    required 
+                    className="form-input" 
+                    placeholder="••••••••" 
+                    value={studentPassword} 
+                    onChange={(e) => setStudentPassword(e.target.value)} 
+                  />
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setLoginMode('select')}>Back</button>
-                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Access Student Profile</button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loadingProvider !== null}>
+                    {loadingProvider === 'email' ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Signing In...
+                      </>
+                    ) : (
+                      'Sign In with Email'
+                    )}
+                  </button>
                 </div>
               </form>
             </div>
