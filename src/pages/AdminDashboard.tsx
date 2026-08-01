@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus } from '../types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
 import { StorageService } from '../services/storageService';
 import { 
   ShieldCheck, Calendar, Users, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, RefreshCw, X 
+  Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -21,7 +21,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   announcements,
   onRefreshData
 }) => {
-  const [activeTab, setActiveTab] = useState<'events' | 'registrations' | 'memories' | 'announcements'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'registrations' | 'memories' | 'announcements' | 'gallery'>('events');
+
+  // Gallery Photos State
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [galleryForm, setGalleryForm] = useState({
+    title: '',
+    caption: '',
+    imageUrl: '',
+    eventName: '',
+    year: '2026'
+  });
 
   // Event modal state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -245,9 +256,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onRefreshData();
   };
 
+  // ----------------------------------------------------
+  // Globe Gallery Handlers
+  // ----------------------------------------------------
+  const handleAddGalleryPhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!galleryForm.title.trim() || !galleryForm.imageUrl.trim()) {
+      alert('Please enter a photo title and upload or paste an image URL.');
+      return;
+    }
+
+    StorageService.addGalleryPhoto({
+      title: galleryForm.title.trim(),
+      caption: galleryForm.caption.trim() || galleryForm.title.trim(),
+      imageUrl: galleryForm.imageUrl.trim(),
+      eventName: galleryForm.eventName.trim() || 'GITS Club Event',
+      year: galleryForm.year.trim() || '2026'
+    });
+
+    setGalleryPhotos(StorageService.getGalleryPhotos());
+    setIsGalleryModalOpen(false);
+    setGalleryForm({
+      title: '',
+      caption: '',
+      imageUrl: '',
+      eventName: '',
+      year: '2026'
+    });
+    onRefreshData();
+  };
+
+  const handleDeleteGalleryPhoto = (id: string) => {
+    if (window.confirm('Remove this photo from the 3D Memory Globe?')) {
+      StorageService.deleteGalleryPhoto(id);
+      setGalleryPhotos(StorageService.getGalleryPhotos());
+      onRefreshData();
+    }
+  };
+
+  const handleGalleryFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setGalleryForm(prev => ({
+            ...prev,
+            imageUrl: event.target!.result as string
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleResetDemoData = () => {
     if (window.confirm('Reset all events, registrations, and memories to demo defaults?')) {
       StorageService.resetAllData();
+      setGalleryPhotos(StorageService.getGalleryPhotos());
       onRefreshData();
     }
   };
@@ -357,6 +423,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('announcements')}
           >
             <Bell size={16} /> Broadcast Banners
+          </button>
+
+          <button 
+            className={`btn btn-sm ${activeTab === 'gallery' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('gallery')}
+          >
+            <Globe size={16} /> 3D Globe Gallery ({galleryPhotos.length})
           </button>
         </div>
 
@@ -695,6 +768,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
+        {/* ---------------------------------------------------- */}
+        {/* TAB 5: 3D GLOBE GALLERY MANAGER */}
+        {/* ---------------------------------------------------- */}
+        {activeTab === 'gallery' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '0.25rem' }}>3D Memory Globe Gallery</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Upload photo images or paste URLs to render them on the interactive 3D Memory Globe.
+                </p>
+              </div>
+
+              <button className="btn btn-primary btn-sm" onClick={() => setIsGalleryModalOpen(true)}>
+                <Plus size={16} /> Add Photo to Memory Globe
+              </button>
+            </div>
+
+            {galleryPhotos.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                {galleryPhotos.map((photo) => (
+                  <div key={photo.id} className="glass-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ height: '170px', position: 'relative', overflow: 'hidden', background: '#0a0e1a' }}>
+                      <img
+                        src={photo.imageUrl}
+                        alt={photo.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <span className="badge badge-purple" style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.7rem' }}>
+                        {photo.year}
+                      </span>
+                    </div>
+
+                    <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.35rem' }}>{photo.title}</h4>
+                        {photo.eventName && (
+                          <p style={{ fontSize: '0.78rem', color: '#00f2fe', margin: '0 0 0.5rem 0' }}>{photo.eventName}</p>
+                        )}
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{photo.caption}</p>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        <button 
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDeleteGalleryPhoto(photo.id)}
+                          style={{ gap: '0.3rem', padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                        >
+                          <Trash2 size={13} /> Remove from Globe
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p style={{ color: 'var(--text-muted)' }}>No photos added yet. Click "Add Photo to Memory Globe" above to add your first photo!</p>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* MODAL: CREATE / EDIT EVENT */}
@@ -909,6 +1045,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsMemoryModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Post Memory Highlight</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD PHOTO TO MEMORY GLOBE */}
+      {isGalleryModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsGalleryModalOpen(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Globe size={20} color="#00f2fe" /> Add Photo to Memory Globe
+              </h3>
+              <button onClick={() => setIsGalleryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddGalleryPhoto} style={{ padding: '1.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">Photo Title *</label>
+                <input 
+                  type="text" required className="form-input" placeholder="e.g. CodeMatrix 2026 Hackathon Night"
+                  value={galleryForm.title} onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Event Name</label>
+                  <input 
+                    type="text" className="form-input" placeholder="CodeMatrix 2026"
+                    value={galleryForm.eventName} onChange={(e) => setGalleryForm({ ...galleryForm, eventName: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Year</label>
+                  <input 
+                    type="text" required className="form-input" placeholder="2026"
+                    value={galleryForm.year} onChange={(e) => setGalleryForm({ ...galleryForm, year: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Photo Caption / Details</label>
+                <input 
+                  type="text" className="form-input" placeholder="Brief memory highlight description..."
+                  value={galleryForm.caption} onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })}
+                />
+              </div>
+
+              {/* Upload or URL options */}
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Upload size={14} color="#00f2fe" /> Select Image File from Device
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="form-input" 
+                  onChange={handleGalleryFileUpload} 
+                  style={{ padding: '0.4rem' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <ImageIcon size={14} color="#00f2fe" /> OR Image Web URL
+                </label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="https://images.unsplash.com/..."
+                  value={galleryForm.imageUrl} 
+                  onChange={(e) => setGalleryForm({ ...galleryForm, imageUrl: e.target.value })}
+                />
+              </div>
+
+              {galleryForm.imageUrl && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem', color: '#00f2fe' }}>Image Preview:</label>
+                  <div style={{ width: '100%', height: '140px', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
+                    <img src={galleryForm.imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsGalleryModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Add Photo to Globe</button>
               </div>
             </form>
           </div>

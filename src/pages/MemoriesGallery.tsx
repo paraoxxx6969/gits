@@ -47,19 +47,27 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
     const storedPhotos = StorageService.getGalleryPhotos();
 
     const generatedImages: ImageData[] = [];
-    const totalCount = 60;
+    const totalCount = Math.max(60, storedPhotos.length);
 
     for (let i = 0; i < totalCount; i++) {
-      const stored = storedPhotos[i % storedPhotos.length];
-      const fallbackUrl = UNSPLASH_POOL[i % UNSPLASH_POOL.length];
-      const fallbackTitle = EVENT_TITLES[i % EVENT_TITLES.length];
-
-      generatedImages.push({
-        id: `globe-img-${i + 1}`,
-        src: stored?.imageUrl || fallbackUrl,
-        alt: stored?.title || fallbackTitle,
-        title: stored?.title || fallbackTitle,
-      });
+      if (storedPhotos.length > 0 && i < storedPhotos.length) {
+        generatedImages.push({
+          id: storedPhotos[i].id || `globe-img-${i + 1}`,
+          src: storedPhotos[i].imageUrl,
+          alt: storedPhotos[i].title,
+          title: storedPhotos[i].title,
+        });
+      } else {
+        const idx = i - storedPhotos.length;
+        const fallbackUrl = UNSPLASH_POOL[idx % UNSPLASH_POOL.length];
+        const fallbackTitle = EVENT_TITLES[idx % EVENT_TITLES.length];
+        generatedImages.push({
+          id: `globe-img-${i + 1}`,
+          src: fallbackUrl,
+          alt: fallbackTitle,
+          title: fallbackTitle,
+        });
+      }
     }
 
     setImages(generatedImages);
