@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, Info, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
+import { User, ShieldCheck, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
 import type { UserSession } from '../types';
 import gitsLogo from '../assets/gits-logo.jpg';
 import { signInWithGoogle, signInWithGithub, signInWithEmailPassword, isFirebaseConfigured } from '../services/firebase';
@@ -16,8 +16,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [studentPassword, setStudentPassword] = useState('student123');
   
   // Admin Credentials State
-  const [adminEmail, setAdminEmail] = useState('admin@gits.edu');
-  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   
   const [error, setError] = useState('');
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | 'email' | null>(null);
@@ -77,14 +77,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === 'admin123' || adminPassword === 'admin') {
+    if (adminEmail.trim().toLowerCase() === 'rawataryan5953@gmail.com' && adminPassword === 'aryan@8291') {
       setError('');
       onLoginSuccess({
         role: 'admin',
         adminEmail: adminEmail.trim()
       });
     } else {
-      setError('Invalid admin credentials. Demo password: admin123');
+      setError('Invalid admin email or password.');
     }
   };
 
@@ -282,25 +282,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {loginMode === 'admin' && (
             <form onSubmit={handleAdminSubmit}>
-              <div style={{ fontSize: '0.95rem', color: '#d8b4fe', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <div style={{ fontSize: '0.95rem', color: '#d8b4fe', fontWeight: 600, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <ShieldCheck size={16} /> Coordinator Protected Admin Login
               </div>
 
-              <div style={{ background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.25)', padding: '0.65rem 0.85rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#00f2fe', display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <Info size={16} />
-                <span>Demo Admin: <code>admin@gits.edu</code> | Pass: <code>admin123</code></span>
-              </div>
-
-              {error && <div style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', padding: '0.6rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</div>}
+              {error && <div style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', padding: '0.65rem 0.85rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1.25rem', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>}
 
               <div className="form-group">
                 <label className="form-label">Admin Email *</label>
-                <input type="email" required className="form-input" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
+                <input 
+                  type="email" 
+                  required 
+                  className="form-input" 
+                  placeholder="admin@gits.edu"
+                  value={adminEmail} 
+                  onChange={(e) => setAdminEmail(e.target.value)} 
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Admin Password *</label>
-                <input type="password" required className="form-input" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+                <input 
+                  type="password" 
+                  required 
+                  className="form-input" 
+                  placeholder="••••••••"
+                  value={adminPassword} 
+                  onChange={(e) => setAdminPassword(e.target.value)} 
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
