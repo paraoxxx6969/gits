@@ -52,7 +52,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Hero Section */}
       <HeroSection 
         onExploreEvents={() => setActiveTab('events')} 
-        onExploreMemories={() => setActiveTab('memories')} 
+        onExploreMemories={() => setActiveTab('gallery')} 
       />
 
       {/* Featured Upcoming Events Section */}
@@ -125,7 +125,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 1.75rem auto', fontSize: '1rem' }}>
               Check out our past hackathon winners, workshop photo galleries, CTF scoreboards, and student tech milestones in our official club timeline.
             </p>
-            <button className="btn btn-primary" onClick={() => setActiveTab('memories')}>
+            <button className="btn btn-primary" onClick={() => setActiveTab('gallery')}>
               <Camera size={18} /> View Past Events Timeline & Gallery
             </button>
           </div>
