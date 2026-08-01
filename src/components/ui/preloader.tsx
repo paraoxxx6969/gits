@@ -130,18 +130,19 @@ export default function Preloader({ onComplete }: PreloaderProps) {
               {words[index]}&nbsp;to&nbsp;
             </span>
 
-            {/* "GITS" — BOLD, CAPITAL (UPPERCASE), with Up-Shining vibrant contrast gradient & glow */}
+            {/* "GITS" — BOLD, CAPITAL (UPPERCASE), with vibrant Electric Cyan up-shine glow (contrasting with white) */}
             <span
               style={{
                 fontWeight: 900,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                background: 'linear-gradient(120deg, #00f2fe 0%, #ff007f 45%, #ffe600 80%, #00f2fe 100%)',
-                backgroundSize: '220% auto',
+                color: '#00f2fe',
+                background: 'linear-gradient(135deg, #00f2fe 0%, #ffffff 50%, #00f2fe 100%)',
+                backgroundSize: '200% auto',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 animation: 'gitsShine 2.5s ease-in-out infinite',
-                filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.9)) drop-shadow(0 0 35px rgba(255, 0, 127, 0.7))',
+                filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.9)) drop-shadow(0 0 35px rgba(0, 242, 254, 0.6))',
               }}
             >
               GITS
