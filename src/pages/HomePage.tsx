@@ -2,7 +2,7 @@ import React from 'react';
 import { HeroSection } from '../components/HeroSection';
 import { EventCard } from '../components/EventCard';
 import type { ClubEvent } from '../types';
-import { Cpu, Code, Shield, Cloud, Terminal, ArrowRight, Camera } from 'lucide-react';
+import { Cpu, Code, Shield, Cloud, Terminal, ArrowRight } from 'lucide-react';
 
 interface HomePageProps {
   events: ClubEvent[];
@@ -117,20 +117,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* Memories Banner Call to Action */}
-      <section style={{ padding: '4rem 0' }}>
-        <div className="container">
-          <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(121, 40, 202, 0.15) 0%, rgba(0, 242, 254, 0.12) 100%)', border: '1px solid rgba(121, 40, 202, 0.3)', position: 'relative', overflow: 'hidden' }}>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '1rem', color: '#fff' }}>Relive Past GITS Moments & Victories</h2>
-            <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 1.75rem auto', fontSize: '1rem' }}>
-              Check out our past hackathon winners, workshop photo galleries, CTF scoreboards, and student tech milestones in our official club timeline.
-            </p>
-            <button className="btn btn-primary" onClick={() => setActiveTab('gallery')}>
-              <Camera size={18} /> View Past Events Timeline & Gallery
-            </button>
-          </div>
-        </div>
-      </section>
+
 
     </div>
   );
