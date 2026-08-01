@@ -60,7 +60,7 @@ export const App: React.FC = () => {
     if (session.role === 'admin') {
       setActiveTab('admin');
     } else if (session.role === 'student') {
-      setActiveTab('student-dashboard');
+      setActiveTab('home');
     }
   };
 
