@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 // "Welcome" translated into different languages.
-// The suffix ("to Gits") stays fixed while this word cycles.
+// The suffix ("to GITS") stays fixed while this word cycles.
 const words = [
   "Welcome",
   "Bienvenue",
@@ -18,14 +18,12 @@ const words = [
   "स्वागत आहे",
 ]
 
-const suffix = "to Gits"
-
 const opacity = {
   initial: {
     opacity: 0,
   },
   enter: {
-    opacity: 0.75,
+    opacity: 0.85,
     transition: { duration: 1, delay: 0.2 },
   },
 }
@@ -95,16 +93,59 @@ export default function Preloader({ onComplete }: PreloaderProps) {
       animate={isExiting ? "exit" : "initial"}
       className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-black z-[99999999999]"
     >
+      <style>{`
+        @keyframes gitsShine {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
+
       {dimension.width > 0 && (
         <>
           <motion.p
             variants={opacity}
             initial="initial"
             animate="enter"
-            className="flex items-center text-white text-4xl md:text-5xl lg:text-6xl absolute z-10 font-medium"
+            className="flex items-center text-white text-4xl md:text-5xl lg:text-6xl absolute z-10 font-normal tracking-normal"
           >
-            <span className="block w-2.5 h-2.5 bg-white rounded-full mr-2.5"></span>
-            {words[index]} {suffix}
+            {/* Glowing neon pulse dot */}
+            <span
+              className="block w-3 h-3 rounded-full mr-4"
+              style={{
+                background: '#00f2fe',
+                boxShadow: '0 0 16px #00f2fe, 0 0 30px rgba(0, 242, 254, 0.8)',
+              }}
+            />
+
+            {/* "Welcome to " — Clean white, normal weight, NOT capitalized/uppercase */}
+            <span
+              style={{
+                fontWeight: 400,
+                color: '#ffffff',
+                opacity: 0.95,
+                textTransform: 'none',
+              }}
+            >
+              {words[index]}&nbsp;to&nbsp;
+            </span>
+
+            {/* "GITS" — BOLD, CAPITAL (UPPERCASE), with Up-Shining vibrant contrast gradient & glow */}
+            <span
+              style={{
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                background: 'linear-gradient(120deg, #00f2fe 0%, #ff007f 45%, #ffe600 80%, #00f2fe 100%)',
+                backgroundSize: '220% auto',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'gitsShine 2.5s ease-in-out infinite',
+                filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.9)) drop-shadow(0 0 35px rgba(255, 0, 127, 0.7))',
+              }}
+            >
+              GITS
+            </span>
           </motion.p>
           <svg className="absolute top-0 w-full h-[calc(100%+300px)]">
             <motion.path variants={curve} initial="initial" animate={isExiting ? "exit" : "initial"} fill="#070b13" />
