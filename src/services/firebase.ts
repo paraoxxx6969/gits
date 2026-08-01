@@ -154,12 +154,17 @@ export async function signInWithEmailPassword(email: string, pass: string): Prom
  * Cloud Firestore Real-time Sync for Gallery Photos
  */
 export async function savePhotoToFirestore(photo: GalleryPhoto): Promise<void> {
-  if (!db) return;
+  if (!db) {
+    console.warn("Firestore Database is not initialized. Verify VITE_FIREBASE_PROJECT_ID.");
+    return;
+  }
   try {
     const photoRef = doc(db, 'gallery_photos', photo.id);
     await setDoc(photoRef, photo);
-  } catch (err) {
-    console.error('Failed to sync photo to Firestore:', err);
+    console.log("Synced photo to Cloud Firestore:", photo.id);
+  } catch (err: any) {
+    console.error('Failed to sync photo to Cloud Firestore:', err);
+    alert(`Firestore Warning: Could not upload photo to Cloud. Error: ${err?.message || err}`);
   }
 }
 
