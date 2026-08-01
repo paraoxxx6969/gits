@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInAnonymously,
   type Auth,
   type UserCredential
 } from 'firebase/auth';
@@ -159,18 +160,24 @@ export async function savePhotoToFirestore(photo: GalleryPhoto): Promise<void> {
     return;
   }
   try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) {}
+    }
     const photoRef = doc(db, 'gallery_photos', photo.id);
     await setDoc(photoRef, photo);
     console.log("Synced photo to Cloud Firestore:", photo.id);
   } catch (err: any) {
     console.error('Failed to sync photo to Cloud Firestore:', err);
-    alert(`Firestore Warning: Could not upload photo to Cloud. Error: ${err?.message || err}`);
+    alert(`Firestore Error: Could not upload photo to Cloud. ${err?.message || err}`);
   }
 }
 
 export async function deletePhotoFromFirestore(photoId: string): Promise<void> {
   if (!db) return;
   try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) {}
+    }
     const photoRef = doc(db, 'gallery_photos', photoId);
     await deleteDoc(photoRef);
   } catch (err) {
