@@ -179,21 +179,27 @@ export async function deletePhotoFromFirestore(photoId: string): Promise<void> {
 }
 
 export function subscribeToGalleryPhotos(onUpdate: (photos: GalleryPhoto[]) => void): () => void {
-  if (!db) return () => {};
+  if (!db) {
+    console.warn("Firestore database is null. Check VITE_FIREBASE_PROJECT_ID in environment variables.");
+    return () => {};
+  }
   try {
     const galleryCol = collection(db, 'gallery_photos');
     return onSnapshot(galleryCol, (snapshot) => {
       const photos: GalleryPhoto[] = [];
-      snapshot.forEach((doc) => {
-        photos.push(doc.data() as GalleryPhoto);
+      snapshot.forEach((docSnap) => {
+        photos.push(docSnap.data() as GalleryPhoto);
       });
       // Sort by newest first
       photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       if (photos.length > 0) {
+        try {
+          localStorage.setItem('gits_club_gallery_v2', JSON.stringify(photos));
+        } catch (e) {}
         onUpdate(photos);
       }
     }, (error) => {
-      console.warn('Firestore subscription error (fallback to local):', error);
+      console.warn('Firestore subscription error:', error);
     });
   } catch (err) {
     console.error('Error establishing Firestore listener:', err);

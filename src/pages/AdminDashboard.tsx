@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
 import { StorageService } from '../services/storageService';
+import { subscribeToGalleryPhotos } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Users, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
@@ -33,6 +34,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     eventName: '',
     year: '2026'
   });
+
+  // Subscribe to Cloud Firestore photos in Admin Panel
+  useEffect(() => {
+    const unsub = subscribeToGalleryPhotos((cloudPhotos) => {
+      setGalleryPhotos(cloudPhotos);
+    });
+    return () => unsub();
+  }, []);
 
   // Event modal state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
