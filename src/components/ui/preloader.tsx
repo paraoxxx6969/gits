@@ -2,9 +2,23 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import gitsLogo from "@/assets/gits-logo.jpg"
 
-const words = ["Hello", "Bonjour", "Ciao", "Olà", "やあ", "Hallå", "Guten tag", "হ্যালো"]
+// "Welcome" translated into different languages.
+// The suffix ("to Gits") stays fixed while this word cycles.
+const words = [
+  "Welcome",
+  "Bienvenue",
+  "Benvenuto",
+  "Bienvenido",
+  "ようこそ",
+  "Välkommen",
+  "Willkommen",
+  "স্বাগতম",
+  "स्वागत है",
+  "स्वागत आहे",
+]
+
+const suffix = "to Gits"
 
 const opacity = {
   initial: {
@@ -22,18 +36,6 @@ const slideUp = {
   exit: {
     top: "-100vh",
     transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] as const, delay: 0.2 },
-  },
-}
-
-const logoReveal = {
-  initial: {
-    opacity: 0,
-    scale: 0.8,
-  },
-  enter: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.8, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 }
 
@@ -86,45 +88,29 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     },
   }
 
-
   return (
     <motion.div
       variants={slideUp}
       initial="initial"
       animate={isExiting ? "exit" : "initial"}
-      className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center bg-black z-[99999999999]"
+      className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-black z-[99999999999]"
     >
       {dimension.width > 0 && (
         <>
-          {/* Logo */}
-          <motion.div
-            variants={logoReveal}
+          <motion.p
+            variants={opacity}
             initial="initial"
             animate="enter"
-            className="absolute z-10 flex flex-col items-center"
-            style={{ marginBottom: '2rem' }}
+            className="flex items-center text-white text-4xl md:text-5xl lg:text-6xl absolute z-10 font-medium"
           >
-            <img
-              src={gitsLogo}
-              alt="GITS Tech Club"
-              className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover mb-6"
-              style={{ boxShadow: '0 0 40px rgba(0, 242, 254, 0.3)' }}
-            />
-            <motion.p
-              variants={opacity}
-              initial="initial"
-              animate="enter"
-              className="flex items-center text-white text-4xl md:text-5xl lg:text-6xl z-10 font-medium"
-            >
-              <span className="block w-2.5 h-2.5 bg-white rounded-full mr-2.5"></span>
-              {words[index]}
-            </motion.p>
-          </motion.div>
+            <span className="block w-2.5 h-2.5 bg-white rounded-full mr-2.5"></span>
+            {words[index]} {suffix}
+          </motion.p>
           <svg className="absolute top-0 w-full h-[calc(100%+300px)]">
             <motion.path variants={curve} initial="initial" animate={isExiting ? "exit" : "initial"} fill="#070b13" />
           </svg>
         </>
       )}
     </motion.div>
-  );
+  )
 }
