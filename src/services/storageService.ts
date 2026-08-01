@@ -421,7 +421,13 @@ export const StorageService = {
       createdAt: new Date().toISOString()
     };
     photos.unshift(newPhoto);
-    localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(photos));
+    try {
+      localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(photos));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error('Storage quota exceeded when saving photo:', e);
+      alert('Failed to save image to local storage quota limit. Try using a web image URL or smaller image file.');
+    }
     return newPhoto;
   },
 
@@ -429,7 +435,12 @@ export const StorageService = {
     const photos = this.getGalleryPhotos();
     const filtered = photos.filter(p => p.id !== id);
     if (filtered.length === photos.length) return false;
-    localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(filtered));
+    try {
+      localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(filtered));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error('Failed to update gallery storage:', e);
+    }
     return true;
   },
 
