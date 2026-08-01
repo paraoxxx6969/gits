@@ -34,7 +34,6 @@ interface MemoriesGalleryProps {
 
 export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
   const [images, setImages] = useState<ImageData[]>([]);
-  const [photoCount, setPhotoCount] = useState(0);
 
   // Prevent vertical page scroll on memory globe page
   useEffect(() => {
@@ -46,7 +45,6 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
 
   useEffect(() => {
     const storedPhotos = StorageService.getGalleryPhotos();
-    setPhotoCount(storedPhotos.length);
 
     const generatedImages: ImageData[] = [];
     const totalCount = 60;
@@ -87,29 +85,6 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
       position: 'relative',
       background: 'radial-gradient(circle at 50% 50%, rgba(121, 40, 202, 0.15) 0%, rgba(8, 12, 20, 1) 70%)',
     }}>
-      {/* Floating Info Overlay */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 100,
-        background: 'rgba(15, 23, 42, 0.75)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(0, 242, 254, 0.3)',
-        padding: '0.5rem 1.25rem',
-        borderRadius: '30px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.6rem',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        pointerEvents: 'none'
-      }}>
-        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f2fe', boxShadow: '0 0 10px #00f2fe' }} />
-        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', letterSpacing: '0.02em' }}>
-          Interactive 3D Memory Globe ({photoCount} Photos Loaded)
-        </span>
-      </div>
 
       <SphereImageGrid
         images={images}
