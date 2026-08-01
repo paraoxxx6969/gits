@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SphereImageGrid, { type ImageData } from '@/components/ui/img-sphere';
 import { StorageService } from '../services/storageService';
+import type { GalleryPhoto } from '../types';
+import { subscribeToGalleryPhotos } from '../services/firebase';
 
 const EVENT_TITLES = [
   'CodeMatrix 2025 Hackathon Grand Finale & Prize Ceremony',
@@ -28,6 +30,8 @@ const UNSPLASH_POOL = [
   'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80',
 ];
 
+
+
 interface MemoriesGalleryProps {
   userRole?: 'guest' | 'student' | 'admin';
 }
@@ -44,34 +48,55 @@ export const MemoriesGallery: React.FC<MemoriesGalleryProps> = () => {
   }, []);
 
   useEffect(() => {
-    const storedPhotos = StorageService.getGalleryPhotos();
+    const buildSphere = (photosList: GalleryPhoto[]) => {
+      const generatedImages: ImageData[] = [];
+      const totalCount = 60;
 
-    const generatedImages: ImageData[] = [];
-    const totalCount = 60;
-
-    for (let i = 0; i < totalCount; i++) {
-      if (storedPhotos.length > 0) {
-        // Cycle stored photos across all 60 nodes on the 3D sphere
-        const photo = storedPhotos[i % storedPhotos.length];
-        generatedImages.push({
-          id: `globe-node-${i + 1}`,
-          src: photo.imageUrl,
-          alt: photo.title,
-          title: photo.eventName ? `${photo.title} • ${photo.eventName}` : photo.title,
-        });
-      } else {
-        const fallbackUrl = UNSPLASH_POOL[i % UNSPLASH_POOL.length];
-        const fallbackTitle = EVENT_TITLES[i % EVENT_TITLES.length];
-        generatedImages.push({
-          id: `globe-node-${i + 1}`,
-          src: fallbackUrl,
-          alt: fallbackTitle,
-          title: fallbackTitle,
-        });
+      for (let i = 0; i < totalCount; i++) {
+        if (photosList.length > 0) {
+          // Cycle photos across all 60 nodes on the 3D sphere
+          const photo = photosList[i % photosList.length];
+          generatedImages.push({
+            id: `globe-node-${i + 1}`,
+            src: photo.imageUrl,
+            alt: photo.title,
+            title: photo.eventName ? `${photo.title} • ${photo.eventName}` : photo.title,
+          });
+        } else {
+          const fallbackUrl = UNSPLASH_POOL[i % UNSPLASH_POOL.length];
+          const fallbackTitle = EVENT_TITLES[i % EVENT_TITLES.length];
+          generatedImages.push({
+            id: `globe-node-${i + 1}`,
+            src: fallbackUrl,
+            alt: fallbackTitle,
+            title: fallbackTitle,
+          });
+        }
       }
-    }
 
-    setImages(generatedImages);
+      setImages(generatedImages);
+    };
+
+    // 1. Initial load from local storage
+    const initialPhotos = StorageService.getGalleryPhotos();
+    buildSphere(initialPhotos);
+
+    // 2. Real-time Cloud Firestore subscription across all devices
+    const unsubscribeCloud = subscribeToGalleryPhotos((cloudPhotos) => {
+      buildSphere(cloudPhotos);
+    });
+
+    // 3. Local tab storage listener
+    const handleLocalStorage = () => {
+      const localPhotos = StorageService.getGalleryPhotos();
+      buildSphere(localPhotos);
+    };
+    window.addEventListener('storage', handleLocalStorage);
+
+    return () => {
+      unsubscribeCloud();
+      window.removeEventListener('storage', handleLocalStorage);
+    };
   }, []);
 
   return (

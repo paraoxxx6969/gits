@@ -1,4 +1,5 @@
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto } from '../types';
+import { savePhotoToFirestore, deletePhotoFromFirestore } from './firebase';
 
 const STORAGE_KEYS = {
   EVENTS: 'gits_club_events_v2',
@@ -428,6 +429,10 @@ export const StorageService = {
       console.error('Storage quota exceeded when saving photo:', e);
       alert('Failed to save image to local storage quota limit. Try using a web image URL or smaller image file.');
     }
+
+    // Sync to Cloud Firestore in real-time across all devices worldwide
+    savePhotoToFirestore(newPhoto);
+
     return newPhoto;
   },
 
@@ -441,6 +446,10 @@ export const StorageService = {
     } catch (e) {
       console.error('Failed to update gallery storage:', e);
     }
+
+    // Delete from Cloud Firestore across all devices
+    deletePhotoFromFirestore(id);
+
     return true;
   },
 

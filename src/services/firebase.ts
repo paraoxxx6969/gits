@@ -9,6 +9,16 @@ import {
   type Auth,
   type UserCredential
 } from 'firebase/auth';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  type Firestore
+} from 'firebase/firestore';
+import type { GalleryPhoto } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -26,10 +36,12 @@ export const isFirebaseConfigured = Boolean(
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
+export let db: Firestore | null = null;
 
 if (isFirebaseConfigured) {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
+  db = getFirestore(app);
 }
 
 const googleProvider = new GoogleAuthProvider();
@@ -136,4 +148,50 @@ export async function signInWithEmailPassword(email: string, pass: string): Prom
     rollNo: derivedRoll,
     provider: 'email'
   };
+}
+
+/**
+ * Cloud Firestore Real-time Sync for Gallery Photos
+ */
+export async function savePhotoToFirestore(photo: GalleryPhoto): Promise<void> {
+  if (!db) return;
+  try {
+    const photoRef = doc(db, 'gallery_photos', photo.id);
+    await setDoc(photoRef, photo);
+  } catch (err) {
+    console.error('Failed to sync photo to Firestore:', err);
+  }
+}
+
+export async function deletePhotoFromFirestore(photoId: string): Promise<void> {
+  if (!db) return;
+  try {
+    const photoRef = doc(db, 'gallery_photos', photoId);
+    await deleteDoc(photoRef);
+  } catch (err) {
+    console.error('Failed to delete photo from Firestore:', err);
+  }
+}
+
+export function subscribeToGalleryPhotos(onUpdate: (photos: GalleryPhoto[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const galleryCol = collection(db, 'gallery_photos');
+    return onSnapshot(galleryCol, (snapshot) => {
+      const photos: GalleryPhoto[] = [];
+      snapshot.forEach((doc) => {
+        photos.push(doc.data() as GalleryPhoto);
+      });
+      // Sort by newest first
+      photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      if (photos.length > 0) {
+        onUpdate(photos);
+      }
+    }, (error) => {
+      console.warn('Firestore subscription error (fallback to local):', error);
+    });
+  } catch (err) {
+    console.error('Error establishing Firestore listener:', err);
+    return () => {};
+  }
 }
