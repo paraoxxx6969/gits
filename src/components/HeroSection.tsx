@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Camera } from 'lucide-react';
-import gitsLogo from '../assets/gits-logo.jpg';
 
 interface HeroSectionProps {
   onExploreEvents: () => void;
@@ -27,22 +26,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#00f2fe' }}>
               Official Student Tech Club of IT Department
             </span>
-          </div>
-
-          {/* Club Logo */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <img
-              src={gitsLogo}
-              alt="GITS Tech Club"
-              style={{
-                width: '100px',
-                height: '100px',
-                borderRadius: '22px',
-                objectFit: 'cover',
-                boxShadow: '0 0 50px rgba(0, 242, 254, 0.3), 0 10px 40px rgba(0, 0, 0, 0.4)',
-                border: '2px solid rgba(0, 242, 254, 0.2)',
-              }}
-            />
           </div>
 
           {/* Main Headline */}
