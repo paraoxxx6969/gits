@@ -1,5 +1,12 @@
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto } from '../types';
-import { savePhotoToFirestore, deletePhotoFromFirestore } from './firebase';
+import { 
+  savePhotoToFirestore, 
+  deletePhotoFromFirestore,
+  saveEventToFirestore,
+  deleteEventFromFirestore,
+  saveMemoryToFirestore,
+  deleteMemoryFromFirestore
+} from './firebase';
 
 const STORAGE_KEYS = {
   EVENTS: 'gits_club_events_v2',
@@ -260,6 +267,7 @@ export const StorageService = {
     };
     events.unshift(newEvent);
     this.saveEvents(events);
+    saveEventToFirestore(newEvent);
     return newEvent;
   },
 
@@ -269,6 +277,7 @@ export const StorageService = {
     if (index === -1) return null;
     events[index] = { ...events[index], ...updatedFields };
     this.saveEvents(events);
+    saveEventToFirestore(events[index]);
     return events[index];
   },
 
@@ -277,6 +286,7 @@ export const StorageService = {
     const filtered = events.filter(e => e.id !== id);
     if (filtered.length === events.length) return false;
     this.saveEvents(filtered);
+    deleteEventFromFirestore(id);
     return true;
   },
 
@@ -350,6 +360,7 @@ export const StorageService = {
     };
     memories.unshift(newMemory);
     localStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(memories));
+    saveMemoryToFirestore(newMemory);
     return newMemory;
   },
 
@@ -358,6 +369,7 @@ export const StorageService = {
     const filtered = memories.filter(m => m.id !== id);
     if (filtered.length === memories.length) return false;
     localStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(filtered));
+    deleteMemoryFromFirestore(id);
     return true;
   },
 

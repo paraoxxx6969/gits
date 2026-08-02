@@ -18,6 +18,8 @@ import { RegistrationModal } from './components/RegistrationModal';
 import { DigitalPassModal } from './components/DigitalPassModal';
 import { LoginPage } from './pages/LoginPage';
 
+import { subscribeToEvents, subscribeToMemories } from './services/firebase';
+
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [userSession, setUserSession] = useState<UserSession>({ role: 'guest' });
@@ -51,6 +53,20 @@ export const App: React.FC = () => {
     const session = StorageService.getUserSession();
     setUserSession(session);
     setIsAuthenticated(Boolean(session.role && session.role !== 'guest'));
+
+    // Subscribe to Cloud Firestore real-time updates across all devices
+    const unsubEvents = subscribeToEvents((cloudEvents) => {
+      if (cloudEvents.length > 0) setEvents(cloudEvents);
+    });
+
+    const unsubMemories = subscribeToMemories((cloudMemories) => {
+      if (cloudMemories.length > 0) setMemories(cloudMemories);
+    });
+
+    return () => {
+      unsubEvents();
+      unsubMemories();
+    };
   }, []);
 
   const handleLoginSuccess = (session: UserSession) => {

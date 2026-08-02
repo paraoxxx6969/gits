@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  GithubAuthProvider, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  GithubAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -19,7 +19,7 @@ import {
   onSnapshot,
   type Firestore
 } from 'firebase/firestore';
-import type { GalleryPhoto } from '../types';
+import type { GalleryPhoto, ClubEvent, EventMemory } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -31,7 +31,7 @@ const firebaseConfig = {
 };
 
 export const isFirebaseConfigured = Boolean(
-  import.meta.env.VITE_FIREBASE_API_KEY && 
+  import.meta.env.VITE_FIREBASE_API_KEY &&
   import.meta.env.VITE_FIREBASE_PROJECT_ID
 );
 
@@ -176,7 +176,7 @@ export async function savePhotoToFirestore(photo: GalleryPhoto): Promise<void> {
   }
   try {
     if (auth && !auth.currentUser) {
-      try { await signInAnonymously(auth); } catch (e) {}
+      try { await signInAnonymously(auth); } catch (e) { }
     }
     const photoRef = doc(db, 'gallery_photos', photo.id);
     await setDoc(photoRef, photo);
@@ -191,7 +191,7 @@ export async function deletePhotoFromFirestore(photoId: string): Promise<void> {
   if (!db) return;
   try {
     if (auth && !auth.currentUser) {
-      try { await signInAnonymously(auth); } catch (e) {}
+      try { await signInAnonymously(auth); } catch (e) { }
     }
     const photoRef = doc(db, 'gallery_photos', photoId);
     await deleteDoc(photoRef);
@@ -203,28 +203,190 @@ export async function deletePhotoFromFirestore(photoId: string): Promise<void> {
 export function subscribeToGalleryPhotos(onUpdate: (photos: GalleryPhoto[]) => void): () => void {
   if (!db) {
     console.warn("Firestore database is null. Check VITE_FIREBASE_PROJECT_ID in environment variables.");
-    return () => {};
+    return () => { };
   }
-  try {
-    const galleryCol = collection(db, 'gallery_photos');
-    return onSnapshot(galleryCol, (snapshot) => {
-      const photos: GalleryPhoto[] = [];
-      snapshot.forEach((docSnap) => {
-        photos.push(docSnap.data() as GalleryPhoto);
+
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const galleryCol = collection(db, 'gallery_photos');
+      unsubscribeSnapshot = onSnapshot(galleryCol, (snapshot) => {
+        const photos: GalleryPhoto[] = [];
+        snapshot.forEach((docSnap) => {
+          photos.push(docSnap.data() as GalleryPhoto);
+        });
+        // Sort by newest first
+        photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (photos.length > 0) {
+          try {
+            localStorage.setItem('gits_club_gallery_v2', JSON.stringify(photos));
+          } catch (e) { }
+          onUpdate(photos);
+        }
+      }, (error) => {
+        // This fires (silently, with no UI feedback) when Firestore security
+        // rules reject the read - most commonly because the device/browser
+        // has never authenticated yet. Signing in anonymously below prevents
+        // that on first load, but this log is kept as a diagnostic signal.
+        console.warn('Firestore subscription error:', error);
       });
-      // Sort by newest first
-      photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      if (photos.length > 0) {
-        try {
-          localStorage.setItem('gits_club_gallery_v2', JSON.stringify(photos));
-        } catch (e) {}
-        onUpdate(photos);
-      }
-    }, (error) => {
-      console.warn('Firestore subscription error:', error);
-    });
-  } catch (err) {
-    console.error('Error establishing Firestore listener:', err);
-    return () => {};
+    } catch (err) {
+      console.error('Error establishing Firestore listener:', err);
+    }
+  };
+
+  // A brand-new device/browser has no Firebase auth session yet. If Firestore
+  // security rules require request.auth != null to read, subscribing before
+  // authenticating fails silently (see the onSnapshot error handler above)
+  // and the gallery just never loads - this is what made photos visible only
+  // on the device/browser that uploaded them. Signing in anonymously first
+  // (mirroring what savePhotoToFirestore already does for writes) fixes that.
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth)
+      .catch((e) => console.warn('Anonymous sign-in before gallery subscription failed:', e))
+      .finally(startListening);
+  } else {
+    startListening();
   }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}
+
+/**
+ * Cloud Firestore Real-time Sync for Club Events
+ */
+export async function saveEventToFirestore(event: ClubEvent): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'club_events', event.id);
+    await setDoc(ref, event);
+    console.log("Synced event to Cloud Firestore:", event.id);
+  } catch (err: any) {
+    console.error('Failed to sync event to Cloud Firestore:', err);
+  }
+}
+
+export async function deleteEventFromFirestore(eventId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'club_events', eventId);
+    await deleteDoc(ref);
+  } catch (err) {
+    console.error('Failed to delete event from Firestore:', err);
+  }
+}
+
+export function subscribeToEvents(onUpdate: (events: ClubEvent[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'club_events');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const events: ClubEvent[] = [];
+        snapshot.forEach((docSnap) => {
+          events.push(docSnap.data() as ClubEvent);
+        });
+        if (events.length > 0) {
+          try { localStorage.setItem('gits_club_events_v2', JSON.stringify(events)); } catch (e) { }
+          onUpdate(events);
+        }
+      }, (err) => console.warn('Events Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing events listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}
+
+/**
+ * Cloud Firestore Real-time Sync for Event Memories
+ */
+export async function saveMemoryToFirestore(memory: EventMemory): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_memories', memory.id);
+    await setDoc(ref, memory);
+    console.log("Synced memory to Cloud Firestore:", memory.id);
+  } catch (err: any) {
+    console.error('Failed to sync memory to Cloud Firestore:', err);
+  }
+}
+
+export async function deleteMemoryFromFirestore(memoryId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_memories', memoryId);
+    await deleteDoc(ref);
+  } catch (err) {
+    console.error('Failed to delete memory from Firestore:', err);
+  }
+}
+
+export function subscribeToMemories(onUpdate: (memories: EventMemory[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'event_memories');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const memories: EventMemory[] = [];
+        snapshot.forEach((docSnap) => {
+          memories.push(docSnap.data() as EventMemory);
+        });
+        memories.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (memories.length > 0) {
+          try { localStorage.setItem('gits_club_memories_v2', JSON.stringify(memories)); } catch (e) { }
+          onUpdate(memories);
+        }
+      }, (err) => console.warn('Memories Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing memories listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
 }
