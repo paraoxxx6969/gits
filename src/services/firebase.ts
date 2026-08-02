@@ -43,6 +43,21 @@ if (isFirebaseConfigured) {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  console.log('✅ Firebase initialized. Project:', firebaseConfig.projectId, '| DB:', !!db, '| Auth:', !!auth);
+} else {
+  console.error('❌ Firebase NOT configured. VITE_FIREBASE_API_KEY:', !!import.meta.env.VITE_FIREBASE_API_KEY, '| VITE_FIREBASE_PROJECT_ID:', !!import.meta.env.VITE_FIREBASE_PROJECT_ID);
+}
+
+// Export diagnostic function for debugging
+export function getFirebaseDiagnostics(): string {
+  const lines = [
+    `Firebase Configured: ${isFirebaseConfigured}`,
+    `Project ID: ${firebaseConfig.projectId || '(empty)'}`,
+    `Firestore DB: ${db ? 'Connected' : 'NULL - not connected'}`,
+    `Auth: ${auth ? 'Ready' : 'NULL'}`,
+    `Current User: ${auth?.currentUser?.uid || 'None'}`,
+  ];
+  return lines.join('\n');
 }
 
 const googleProvider = new GoogleAuthProvider();

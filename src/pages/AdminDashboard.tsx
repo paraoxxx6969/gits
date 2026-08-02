@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
 import { StorageService } from '../services/storageService';
-import { subscribeToGalleryPhotos } from '../services/firebase';
+import { subscribeToGalleryPhotos, getFirebaseDiagnostics } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Users, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
@@ -381,7 +381,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#fff' }}>GITS Admin Control Center</h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => alert(getFirebaseDiagnostics())} title="Check Firebase Cloud Connection">
+              🔍 Firebase Status
+            </button>
+
             <button className="btn btn-secondary btn-sm" onClick={handleResetDemoData} title="Reset to default sample data">
               <RefreshCw size={14} /> Reset Demo Data
             </button>
