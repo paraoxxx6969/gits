@@ -268,14 +268,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // ----------------------------------------------------
   // Globe Gallery Handlers
   // ----------------------------------------------------
-  const handleAddGalleryPhoto = (e: React.FormEvent) => {
+  const handleAddGalleryPhoto = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!galleryForm.title.trim() || !galleryForm.imageUrl.trim()) {
       alert('Please enter a photo title and upload or paste an image URL.');
       return;
     }
 
-    StorageService.addGalleryPhoto({
+    const created = StorageService.addGalleryPhoto({
       title: galleryForm.title.trim(),
       caption: galleryForm.caption.trim() || galleryForm.title.trim(),
       imageUrl: galleryForm.imageUrl.trim(),
