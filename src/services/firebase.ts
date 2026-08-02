@@ -11,7 +11,6 @@ import {
   type UserCredential
 } from 'firebase/auth';
 import {
-  initializeFirestore,
   getFirestore,
   collection,
   doc,
@@ -24,12 +23,13 @@ import {
 import type { GalleryPhoto, ClubEvent, EventMemory } from '../types';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDTzVypF6Tv7e3PrDIkbqANKDjlg9s0EI",
+  apiKey: "AIzaSyDTzVypF6Tv7e3PrDIkbqANKDjlg9gS0EI",
   authDomain: "gits-club-portal.firebaseapp.com",
   projectId: "gits-club-portal",
   storageBucket: "gits-club-portal.firebasestorage.app",
   messagingSenderId: "615413766127",
-  appId: "1:615413766127:web:458b7df166957262e7081a"
+  appId: "1:615413766127:web:458b7df166957262e7081a",
+  measurementId: "G-LHKT9ELZ82"
 };
 
 export const isFirebaseConfigured = true;
@@ -41,15 +41,7 @@ export let db: Firestore | null = null;
 try {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
-  // Use initializeFirestore with long polling to fix "Database not found" errors
-  try {
-    db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-    });
-  } catch (e) {
-    // If already initialized (hot reload), fall back to getFirestore
-    db = getFirestore(app);
-  }
+  db = getFirestore(app);
   console.log('✅ Firebase initialized. Project:', firebaseConfig.projectId, '| DB:', !!db, '| Auth:', !!auth);
 } catch (err) {
   console.error('❌ Firebase initialization FAILED:', err);
