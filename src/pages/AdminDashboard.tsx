@@ -382,7 +382,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary btn-sm" onClick={async () => { const r = await testFirestoreConnection(); alert(r); }} title="Test Firestore Write/Read">
+            <button className="btn btn-secondary btn-sm" onClick={async () => { 
+              try {
+                const r = await testFirestoreConnection(); 
+                alert(r); 
+              } catch (e: any) {
+                alert('Test failed with exception: ' + (e?.message || e));
+              }
+            }} title="Test Firestore Write/Read">
               🔬 Test Firestore
             </button>
 
