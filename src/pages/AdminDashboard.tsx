@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
 import { StorageService } from '../services/storageService';
-import { subscribeToGalleryPhotos, getFirebaseDiagnostics } from '../services/firebase';
+import { subscribeToGalleryPhotos, testFirestoreConnection } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Users, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
@@ -275,7 +275,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    const created = StorageService.addGalleryPhoto({
+    StorageService.addGalleryPhoto({
       title: galleryForm.title.trim(),
       caption: galleryForm.caption.trim() || galleryForm.title.trim(),
       imageUrl: galleryForm.imageUrl.trim(),
@@ -382,8 +382,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => alert(getFirebaseDiagnostics())} title="Check Firebase Cloud Connection">
-              🔍 Firebase Status
+            <button className="btn btn-secondary btn-sm" onClick={async () => { const r = await testFirestoreConnection(); alert(r); }} title="Test Firestore Write/Read">
+              🔬 Test Firestore
             </button>
 
             <button className="btn btn-secondary btn-sm" onClick={handleResetDemoData} title="Reset to default sample data">

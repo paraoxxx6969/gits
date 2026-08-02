@@ -11,10 +11,12 @@ import {
   type UserCredential
 } from 'firebase/auth';
 import {
+  initializeFirestore,
   getFirestore,
   collection,
   doc,
   setDoc,
+  getDoc,
   deleteDoc,
   onSnapshot,
   type Firestore
@@ -22,12 +24,12 @@ import {
 import type { GalleryPhoto, ClubEvent, EventMemory } from '../types';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDTzVypF6Tv7e3PrDikbqANKDjlg9s0EI",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gits-club-portal.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gits-club-portal",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gits-club-portal.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "615413766127",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:615413766127:web:458b7df166957262e7081a"
+  apiKey: "AIzaSyDTzVypF6Tv7e3PrDIkbqANKDjlg9s0EI",
+  authDomain: "gits-club-portal.firebaseapp.com",
+  projectId: "gits-club-portal",
+  storageBucket: "gits-club-portal.firebasestorage.app",
+  messagingSenderId: "615413766127",
+  appId: "1:615413766127:web:458b7df166957262e7081a"
 };
 
 export const isFirebaseConfigured = true;
@@ -36,16 +38,87 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 export let db: Firestore | null = null;
 
-if (isFirebaseConfigured) {
+try {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = getFirestore(app);
+  // Use initializeFirestore with long polling to fix "Database not found" errors
+  try {
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+  } catch (e) {
+    // If already initialized (hot reload), fall back to getFirestore
+    db = getFirestore(app);
+  }
   console.log('✅ Firebase initialized. Project:', firebaseConfig.projectId, '| DB:', !!db, '| Auth:', !!auth);
-} else {
-  console.error('❌ Firebase NOT configured. VITE_FIREBASE_API_KEY:', !!import.meta.env.VITE_FIREBASE_API_KEY, '| VITE_FIREBASE_PROJECT_ID:', !!import.meta.env.VITE_FIREBASE_PROJECT_ID);
+} catch (err) {
+  console.error('❌ Firebase initialization FAILED:', err);
 }
 
-// Export diagnostic function for debugging
+// ──────────────────────────────────────────────────────────
+// REAL diagnostic: writes a test doc to Firestore, reads it back,
+// then deletes it.  Returns a human-readable status string.
+// ──────────────────────────────────────────────────────────
+export async function testFirestoreConnection(): Promise<string> {
+  const results: string[] = [];
+  results.push(`Project ID: ${firebaseConfig.projectId}`);
+  results.push(`Firestore DB object: ${db ? 'EXISTS' : 'NULL'}`);
+  results.push(`Auth object: ${auth ? 'EXISTS' : 'NULL'}`);
+
+  if (!db) {
+    results.push('❌ FAILED: db is null - Firestore never initialized');
+    return results.join('\n');
+  }
+
+  // Step 1: Anonymous auth
+  try {
+    if (auth && !auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+    results.push(`✅ Auth: Signed in as ${auth?.currentUser?.uid || 'unknown'}`);
+  } catch (authErr: any) {
+    results.push(`❌ Auth FAILED: ${authErr?.code || authErr?.message || authErr}`);
+    return results.join('\n');
+  }
+
+  // Step 2: Write a test document
+  const testId = '_firestore_test_' + Date.now();
+  try {
+    const testRef = doc(db, '_diagnostics', testId);
+    await setDoc(testRef, { test: true, timestamp: new Date().toISOString() });
+    results.push('✅ WRITE: Successfully wrote test document to Firestore!');
+  } catch (writeErr: any) {
+    results.push(`❌ WRITE FAILED: ${writeErr?.code || ''} ${writeErr?.message || writeErr}`);
+    return results.join('\n');
+  }
+
+  // Step 3: Read it back
+  try {
+    const testRef = doc(db, '_diagnostics', testId);
+    const snap = await getDoc(testRef);
+    if (snap.exists()) {
+      results.push('✅ READ: Successfully read test document back!');
+    } else {
+      results.push('⚠️ READ: Document was written but could not be read back.');
+    }
+  } catch (readErr: any) {
+    results.push(`❌ READ FAILED: ${readErr?.code || ''} ${readErr?.message || readErr}`);
+  }
+
+  // Step 4: Delete the test document
+  try {
+    const testRef = doc(db, '_diagnostics', testId);
+    await deleteDoc(testRef);
+    results.push('✅ DELETE: Cleaned up test document.');
+  } catch (delErr: any) {
+    results.push(`⚠️ DELETE: ${delErr?.message || delErr}`);
+  }
+
+  results.push('\n🎉 Firestore is FULLY WORKING if all steps show ✅');
+  return results.join('\n');
+}
+
+// Export simple diagnostic (non-async)
 export function getFirebaseDiagnostics(): string {
   const lines = [
     `Firebase Configured: ${isFirebaseConfigured}`,
