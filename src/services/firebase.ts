@@ -22,18 +22,15 @@ import {
 import type { GalleryPhoto, ClubEvent, EventMemory } from '../types';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDTzVypF6Tv7e3PrDikbqANKDjlg9s0EI",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gits-club-portal.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gits-club-portal",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gits-club-portal.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "615413766127",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:615413766127:web:458b7df166957262e7081a"
 };
 
-export const isFirebaseConfigured = Boolean(
-  import.meta.env.VITE_FIREBASE_API_KEY &&
-  import.meta.env.VITE_FIREBASE_PROJECT_ID
-);
+export const isFirebaseConfigured = true;
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
