@@ -79,6 +79,61 @@ export const App: React.FC = () => {
       if (cloudCrew.length > 0) setCrewMembers(cloudCrew);
     });
 
+    // Check if website was opened by scanning a QR code with ?ticket=...
+    const searchParams = new URLSearchParams(window.location.search);
+    const ticketCode = searchParams.get('ticket');
+    if (ticketCode) {
+      const studentName = searchParams.get('name') || 'Student Attendee';
+      const rollNo = searchParams.get('roll') || 'N/A';
+      const grNo = searchParams.get('gr') || '';
+      const eventTitle = searchParams.get('event') || 'GITS Tech Club Event';
+      const dept = searchParams.get('dept') || 'Information Technology';
+      const year = searchParams.get('year') || 'TE';
+      const div = searchParams.get('div') || '';
+
+      const scannedReg: EventRegistration = {
+        id: `scan-${ticketCode}`,
+        eventId: `event-${ticketCode}`,
+        eventTitle: eventTitle,
+        studentName: studentName,
+        rollNo: rollNo,
+        grNo: grNo,
+        email: 'verified@student.gits.edu',
+        phone: '',
+        department: dept,
+        year: year,
+        div: div,
+        status: 'Confirmed',
+        ticketCode: ticketCode,
+        registeredAt: new Date().toISOString()
+      };
+
+      const scannedEvent: ClubEvent = {
+        id: `event-${ticketCode}`,
+        title: eventTitle,
+        slug: 'scanned-event',
+        category: 'Workshop',
+        status: 'Upcoming',
+        shortDescription: '',
+        description: '',
+        date: 'Event Date',
+        time: '',
+        venue: 'DMCE Campus',
+        capacity: 100,
+        registeredCount: 1,
+        image: '',
+        tags: [],
+        prerequisites: [],
+        fee: 'Free',
+        speaker: { name: '', role: '', organization: '', avatar: '' },
+        schedule: [],
+        organizer: 'GITS DMCE',
+        createdAt: new Date().toISOString()
+      };
+
+      setGeneratedPass({ registration: scannedReg, event: scannedEvent });
+    }
+
     return () => {
       unsubEvents();
       unsubMemories();

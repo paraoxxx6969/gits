@@ -20,18 +20,20 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
   // Build the QR payload — all student + event info in structured text
   const qrPayload = useMemo(() => {
     if (!registration || !event) return '';
-    return [
-      `GITS EVENT PASS: ${registration.ticketCode}`,
-      `Attendee: ${registration.studentName}`,
-      `Roll No: ${registration.rollNo}`,
-      `GR No: ${registration.grNo || 'N/A'}`,
-      `Dept: ${registration.department} (${registration.year}${registration.div ? `-${registration.div}` : ''})`,
-      `Email: ${registration.email}`,
-      `Phone: ${registration.phone || 'N/A'}`,
-      `Event: ${event.title}`,
-      `Date & Venue: ${event.date} @ ${event.venue}`,
-      `Status: ${registration.status}`
-    ].join('\n');
+    const origin = window.location.origin.includes('localhost') 
+      ? 'https://gits-dmce.vercel.app' 
+      : window.location.origin;
+    const params = new URLSearchParams({
+      ticket: registration.ticketCode,
+      name: registration.studentName,
+      roll: registration.rollNo,
+      gr: registration.grNo || '',
+      event: event.title,
+      dept: registration.department,
+      year: registration.year,
+      div: registration.div || ''
+    });
+    return `${origin}/?${params.toString()}`;
   }, [registration, event]);
 
   // Early return AFTER all hooks
