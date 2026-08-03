@@ -1,12 +1,12 @@
 import React from 'react';
-import { Terminal, Globe, Share2, Code2, Mail, MapPin, LogIn } from 'lucide-react';
+import { Terminal, Globe, Share2, Code2, Mail, MapPin } from 'lucide-react';
 
 interface FooterProps {
   setActiveTab: (tab: string) => void;
   onOpenLoginModal: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal }) => {
+export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal: _onOpenLoginModal }) => {
   return (
     <footer style={{ background: '#04070d', borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '4rem 0 2rem 0', marginTop: '5rem' }}>
       <div className="container">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Users, ArrowRight, Tag } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Tag } from 'lucide-react';
 import type { ClubEvent } from '../types';
 
 
@@ -12,7 +12,7 @@ interface EventCardProps {
 export const EventCard: React.FC<EventCardProps> = ({
   event,
   onSelectEvent,
-  onRegisterEvent
+  onRegisterEvent: _onRegisterEvent
 }) => {
   const isFull = event.registeredCount >= event.capacity;
   const isCompleted = event.status === 'Completed';

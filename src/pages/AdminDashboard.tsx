@@ -3,7 +3,7 @@ import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCate
 import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos, testFirestoreConnection } from '../services/firebase';
 import { 
-  ShieldCheck, Calendar, Users, Camera, Bell, Plus, Edit3, Trash2, 
+  ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
 } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   announcements,
   onRefreshData
 }) => {
-  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations'>('events');
 
   // Gallery Photos State
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
