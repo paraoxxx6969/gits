@@ -16,10 +16,10 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
 }) => {
   const passRef = useRef<HTMLDivElement>(null);
 
-  if (!registration || !event) return null;
-
+  // ⚠️ useMemo MUST be before any early return — React hooks rules
   // Build the QR payload — all student + event info in structured text
   const qrPayload = useMemo(() => {
+    if (!registration || !event) return '';
     const lines = [
       `GITS DMCE EVENT PASS`,
       `─────────────────────`,
@@ -43,6 +43,9 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
     ];
     return lines.join('\n');
   }, [registration, event]);
+
+  // Early return AFTER all hooks
+  if (!registration || !event) return null;
 
   const handlePrint = () => {
     window.print();
