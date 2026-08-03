@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 /**
  * SphereImageGrid - Interactive 3D Image Sphere Component
@@ -126,17 +126,36 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
   const [imagePositions, setImagePositions] = useState<SphericalPosition[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMousePos = useRef<MousePosition>({ x: 0, y: 0 });
   const animationFrame = useRef<number | null>(null);
+  const touchStartDist = useRef<number | null>(null);
+  const touchStartZoom = useRef<number>(1.0);
 
   // ==========================================
-  // COMPUTED VALUES
+  // COMPUTED VALUES (RESPONSIVE FOR MOBILE VS DESKTOP)
   // ==========================================
 
-  const actualSphereRadius = sphereRadius || containerSize * 0.5;
-  const baseImageSize = containerSize * baseImageScale;
+  const isMobile = windowWidth < 768;
+  const effectiveContainerSize = isMobile
+    ? Math.min(containerSize, Math.max(280, windowWidth - 24))
+    : containerSize;
+
+  const baseRadius = isMobile
+    ? Math.min(sphereRadius, effectiveContainerSize * 0.42)
+    : (sphereRadius || containerSize * 0.5);
+
+  const actualSphereRadius = baseRadius * zoomLevel;
+  const baseImageSize = effectiveContainerSize * baseImageScale * (isMobile ? 1.15 : 1.0);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // ==========================================
   // UTILITY FUNCTIONS
@@ -370,14 +389,34 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
   }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDist.current = dist;
+      touchStartZoom.current = zoomLevel;
+      setIsDragging(false);
+      return;
+    }
     const touch = e.touches[0];
     setIsDragging(true);
     setVelocity({ x: 0, y: 0 });
     lastMousePos.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
+  }, [zoomLevel]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isDragging) return;
+    if (e.touches.length === 2 && touchStartDist.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scaleRatio = dist / touchStartDist.current;
+      const newZoom = Math.max(0.6, Math.min(2.5, touchStartZoom.current * scaleRatio));
+      setZoomLevel(newZoom);
+      return;
+    }
+    if (!isDragging || e.touches.length > 1) return;
 
     const touch = e.touches[0];
     const deltaX = touch.clientX - lastMousePos.current.x;
@@ -404,6 +443,7 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
 
   const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
+    touchStartDist.current = null;
   }, []);
 
   // ==========================================
@@ -473,8 +513,8 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
           position: 'absolute',
           width: `${imageSize}px`,
           height: `${imageSize}px`,
-          left: `${containerSize/2 + position.x}px`,
-          top: `${containerSize/2 + position.y}px`,
+          left: `${effectiveContainerSize/2 + position.x}px`,
+          top: `${effectiveContainerSize/2 + position.y}px`,
           opacity: position.fadeOpacity,
           transform: `translate(-50%, -50%) scale(${finalScale})`,
           zIndex: position.zIndex,
@@ -508,7 +548,7 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
         </div>
       </div>
     );
-  }, [worldPositions, baseImageSize, containerSize, hoveredIndex, hoverScale]);
+  }, [worldPositions, baseImageSize, effectiveContainerSize, hoveredIndex, hoverScale]);
 
   const renderSpotlightModal = () => {
     if (!selectedImage) return null;
@@ -592,8 +632,8 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
     return (
       <div
         style={{
-          width: containerSize,
-          height: containerSize,
+          width: effectiveContainerSize,
+          height: effectiveContainerSize,
           borderRadius: '16px',
           background: 'rgba(255,255,255,0.03)',
           display: 'flex',
@@ -611,8 +651,8 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
     return (
       <div
         style={{
-          width: containerSize,
-          height: containerSize,
+          width: effectiveContainerSize,
+          height: effectiveContainerSize,
           borderRadius: '16px',
           border: '2px dashed rgba(255,255,255,0.1)',
           display: 'flex',
@@ -650,8 +690,8 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
           position: 'relative',
           userSelect: 'none',
           cursor: 'grab',
-          width: containerSize,
-          height: containerSize,
+          width: effectiveContainerSize,
+          height: effectiveContainerSize,
           perspective: `${perspective}px`,
           margin: '0 auto',
           touchAction: 'none',
@@ -663,6 +703,58 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
           {images.map((image, index) => renderImageNode(image, index))}
         </div>
       </div>
+
+      {isMobile && (
+        <div style={{
+          position: 'absolute',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(8, 12, 20, 0.88)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(0, 242, 254, 0.35)',
+          borderRadius: '30px',
+          padding: '6px 16px',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.2)',
+        }}>
+          <button
+            type="button"
+            onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.2))}
+            style={{ background: 'transparent', border: 'none', color: '#00f2fe', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+            title="Zoom Out"
+          >
+            <ZoomOut size={18} />
+          </button>
+
+          <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 700, minWidth: '42px', textAlign: 'center' }}>
+            {Math.round(zoomLevel * 100)}%
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setZoomLevel(prev => Math.min(2.5, prev + 0.2))}
+            style={{ background: 'transparent', border: 'none', color: '#00f2fe', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+            title="Zoom In"
+          >
+            <ZoomIn size={18} />
+          </button>
+
+          <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.2)', margin: '0 2px' }} />
+
+          <button
+            type="button"
+            onClick={() => { setZoomLevel(1.0); setRotation({ x: 15, y: 15, z: 0 }); }}
+            style={{ background: 'transparent', border: 'none', color: '#a855f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+            title="Reset View"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
+      )}
 
       {renderSpotlightModal()}
     </>

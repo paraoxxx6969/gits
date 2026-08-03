@@ -36,8 +36,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const sublineRef = useRef<HTMLDivElement>(null);
   const teamGridRef = useRef<HTMLDivElement>(null);
-  const statsInnerRef = useRef<HTMLDivElement>(null);
-  const statsBlocksRef = useRef<(HTMLDivElement | null)[]>([]);
   const animCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
       gsap.set('.m-big-text .m-letter', { y: 80, opacity: 0 });
       gsap.set(sublineRef.current, { opacity: 0, y: 20 });
       gsap.set('.m-t-card', { opacity: 0 });
-      gsap.set(statsInnerRef.current, { opacity: 0 });
 
       // Set cards initial state
       cardsRef.current.forEach((card, i) => {
@@ -227,44 +224,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
         scrollTrigger: { trigger: teamGridRef.current, start: 'top 80%' },
       });
 
-      // ---- STATS REVEAL + COUNTERS ----
-      gsap.to(statsInnerRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1.2,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '.m-stats', start: 'top 80%' },
-      });
-      gsap.from(statsInnerRef.current, {
-        y: 60,
-        scale: 0.97,
-        duration: 1.2,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '.m-stats', start: 'top 80%' },
-      });
-
-      ScrollTrigger.create({
-        trigger: '.m-stats',
-        start: 'top 75%',
-        once: true,
-        onEnter: () => {
-          statsBlocksRef.current.forEach((el) => {
-            if (!el) return;
-            const target = parseFloat(el.dataset.count || '0');
-            const span = el.querySelector('span');
-            if (!span) return;
-            gsap.to({ v: 0 }, {
-              v: target,
-              duration: 2,
-              ease: 'power2.out',
-              onUpdate: function () {
-                span.textContent = Math.floor(this.targets()[0].v).toLocaleString();
-              },
-            });
-          });
-        },
-      });
-
       // ---- BIG TEXT HOVER ----
       const bigWrap = bigTextRef.current?.parentElement;
       const onBigEnter = () => {
@@ -375,22 +334,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ===== STATS ===== */}
-      <section className="m-stats">
-        <div className="m-stats-inner" ref={statsInnerRef}>
-          <h3>{MEMBERS.length} humans.<br />One <em>tight ship</em>.</h3>
-
-          <div className="m-stat-block" data-count="62" ref={(el) => { statsBlocksRef.current[0] = el; }}>
-            <div className="m-num"><span>0</span></div>
-            <div className="m-lbl">Events conducted</div>
-          </div>
-          <div className="m-stat-block" data-count="14" ref={(el) => { statsBlocksRef.current[1] = el; }}>
-            <div className="m-num"><span>0</span><small>yrs</small></div>
-            <div className="m-lbl">Combined craft</div>
-          </div>
         </div>
       </section>
     </div>

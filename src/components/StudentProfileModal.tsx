@@ -92,11 +92,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 9999 }}>
+    <div className="modal-overlay" style={{ zIndex: 9999, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
       <div 
         className="modal-container" 
         onClick={(e) => e.stopPropagation()} 
-        style={{ maxWidth: '580px', width: '90%', borderRadius: '20px', overflow: 'hidden' }}
+        style={{ 
+          maxWidth: '580px', 
+          width: '94%', 
+          maxHeight: '88vh', 
+          overflowY: 'auto', 
+          WebkitOverflowScrolling: 'touch', 
+          borderRadius: '20px' 
+        }}
       >
         {/* Header */}
         <div style={{
