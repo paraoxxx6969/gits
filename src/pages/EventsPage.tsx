@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ClubEvent, EventCategory } from '../types';
+import type { ClubEvent, EventCategory, EventRegistration } from '../types';
 import { EventCard } from '../components/EventCard';
 import { Search, Filter, Calendar } from 'lucide-react';
 
@@ -8,12 +8,18 @@ interface EventsPageProps {
   events: ClubEvent[];
   onSelectEvent: (event: ClubEvent) => void;
   onRegisterEvent: (event: ClubEvent) => void;
+  registrations?: EventRegistration[];
+  userEmail?: string;
+  userRollNo?: string;
 }
 
 export const EventsPage: React.FC<EventsPageProps> = ({
   events,
   onSelectEvent,
-  onRegisterEvent
+  onRegisterEvent,
+  registrations = [],
+  userEmail,
+  userRollNo
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -108,14 +114,23 @@ export const EventsPage: React.FC<EventsPageProps> = ({
         {/* Events Grid */}
         {filteredEvents.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
-            {filteredEvents.map(evt => (
-              <EventCard 
-                key={evt.id}
-                event={evt}
-                onSelectEvent={onSelectEvent}
-                onRegisterEvent={onRegisterEvent}
-              />
-            ))}
+            {filteredEvents.map(evt => {
+              const isRegistered = registrations.some(r =>
+                r.eventId === evt.id && (
+                  (userEmail && r.email.toLowerCase() === userEmail.toLowerCase()) ||
+                  (userRollNo && r.rollNo.toUpperCase() === userRollNo.toUpperCase())
+                )
+              );
+              return (
+                <EventCard 
+                  key={evt.id}
+                  event={evt}
+                  onSelectEvent={onSelectEvent}
+                  onRegisterEvent={onRegisterEvent}
+                  isRegistered={isRegistered}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>

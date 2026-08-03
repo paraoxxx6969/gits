@@ -286,6 +286,9 @@ export const App: React.FC = () => {
             events={events}
             onSelectEvent={(evt) => setSelectedEvent(evt)}
             onRegisterEvent={(evt) => setRegisteringEvent(evt)}
+            registrations={registrations}
+            userEmail={userSession.studentInfo?.email}
+            userRollNo={userSession.studentInfo?.rollNo}
           />
         )}
 

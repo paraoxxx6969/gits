@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Users, Tag } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Tag, CheckCircle2 } from 'lucide-react';
 import type { ClubEvent } from '../types';
 
 
@@ -7,12 +7,14 @@ interface EventCardProps {
   event: ClubEvent;
   onSelectEvent: (event: ClubEvent) => void;
   onRegisterEvent: (event: ClubEvent) => void;
+  isRegistered?: boolean;
 }
 
 export const EventCard: React.FC<EventCardProps> = ({
   event,
   onSelectEvent,
-  onRegisterEvent
+  onRegisterEvent,
+  isRegistered = false
 }) => {
   const isFull = event.registeredCount >= event.capacity;
   const isLive = event.status === 'Live';
@@ -36,10 +38,47 @@ export const EventCard: React.FC<EventCardProps> = ({
   const seatPercent = Math.min(100, Math.round((event.registeredCount / event.capacity) * 100));
 
   return (
-    <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      
+    <div
+      className="glass-card"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+        position: 'relative',
+        // Highlight the card with a green glow when registered
+        ...(isRegistered && {
+          border: '1px solid rgba(16, 185, 129, 0.5)',
+          boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.15), 0 8px 32px rgba(16, 185, 129, 0.08)'
+        })
+      }}
+    >
+      {/* "You're Registered" ribbon — shown only if registered */}
+      {isRegistered && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+          color: '#fff',
+          padding: '0.45rem 1rem',
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          letterSpacing: '0.03em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.4rem',
+        }}>
+          <CheckCircle2 size={14} />
+          🎉 You're registered — Seat Confirmed!
+        </div>
+      )}
+
       {/* Event Header Banner Image */}
-      <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: '180px', overflow: 'hidden', marginTop: isRegistered ? '32px' : 0 }}>
         <img 
           src={event.image} 
           alt={event.title} 
@@ -100,7 +139,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div style={{ 
               width: `${seatPercent}%`, 
               height: '100%', 
-              background: isFull ? '#ef4444' : 'linear-gradient(90deg, #00f2fe 0%, #4facfe 100%)',
+              background: isFull ? '#ef4444' : isRegistered ? 'linear-gradient(90deg, #059669 0%, #10b981 100%)' : 'linear-gradient(90deg, #00f2fe 0%, #4facfe 100%)',
               transition: 'width 0.3s ease'
             }} />
           </div>
@@ -116,7 +155,28 @@ export const EventCard: React.FC<EventCardProps> = ({
             See Details
           </button>
           
-          {isLive && !isFull ? (
+          {isRegistered ? (
+            /* Already registered — show confirmation state, disable re-registration */
+            <button
+              disabled
+              className="btn btn-sm"
+              style={{
+                flex: 1.2,
+                background: 'rgba(5, 150, 105, 0.2)',
+                border: '1px solid rgba(16, 185, 129, 0.5)',
+                color: '#34d399',
+                cursor: 'default',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                fontWeight: 700,
+                fontSize: '0.8rem'
+              }}
+            >
+              <CheckCircle2 size={14} /> Seat Confirmed
+            </button>
+          ) : isLive && !isFull ? (
             <button 
               onClick={() => onRegisterEvent(event)} 
               className="btn btn-sm btn-primary"
