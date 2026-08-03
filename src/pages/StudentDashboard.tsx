@@ -20,9 +20,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onEditProfile,
   onCancelRegistration
 }) => {
-  // Filter student's own registrations
+  // Filter student's active & pending registrations (exclude Cancelled or deleted registrations)
   const studentRegs = registrations.filter(
-    r => r.rollNo.toUpperCase() === studentInfo.rollNo.toUpperCase() || r.email.toLowerCase() === studentInfo.email.toLowerCase()
+    r => r.status !== 'Cancelled' && (
+      r.rollNo.toUpperCase() === studentInfo.rollNo.toUpperCase() ||
+      r.email.toLowerCase() === studentInfo.email.toLowerCase()
+    )
   );
 
   const getStatusBadge = (status: EventRegistration['status']) => {
