@@ -15,7 +15,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   onRegisterEvent
 }) => {
   const isFull = event.registeredCount >= event.capacity;
-  const isCompleted = event.status === 'Completed';
+  const isLive = event.status === 'Live';
 
   // Category badge styling
   const getCategoryBadgeClass = (category: string) => {
@@ -116,15 +116,15 @@ export const EventCard: React.FC<EventCardProps> = ({
             See Details
           </button>
           
-          {isCompleted ? (
+          {isLive && !isFull ? (
             <button 
-              disabled
-              className="btn btn-sm btn-secondary"
-              style={{ flex: 1.2, opacity: 0.6, cursor: 'not-allowed' }}
+              onClick={() => onRegisterEvent(event)} 
+              className="btn btn-sm btn-primary"
+              style={{ flex: 1.2 }}
             >
-              Ended
+              ⚡ Register Now
             </button>
-          ) : isFull ? (
+          ) : isLive && isFull ? (
             <button 
               disabled
               className="btn btn-sm btn-secondary"
@@ -134,11 +134,11 @@ export const EventCard: React.FC<EventCardProps> = ({
             </button>
           ) : (
             <button 
-              onClick={() => onRegisterEvent(event)} 
-              className="btn btn-sm btn-primary"
-              style={{ flex: 1.2 }}
+              disabled
+              className="btn btn-sm btn-secondary"
+              style={{ flex: 1.2, opacity: 0.6, cursor: 'not-allowed' }}
             >
-              ⚡ Register Now
+              🔔 Stay Tuned
             </button>
           )}
         </div>
