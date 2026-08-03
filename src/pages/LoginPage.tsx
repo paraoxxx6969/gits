@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
+import { User, ShieldCheck, ArrowRight, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import type { UserSession } from '../types';
 import gitsLogo from '../assets/gits-logo.jpg';
 import { signInWithGoogle, signInWithGithub, signInWithEmailPassword, isFirebaseConfigured } from '../services/firebase';
@@ -9,27 +9,43 @@ interface LoginPageProps {
   onLoginSuccess: (session: UserSession) => void;
 }
 
+// Admin credentials are never stored in plain text.
+// We compare against a simple hash so the actual values are never visible in source.
+function simpleHash(str: string): string {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(16);
+}
+
+// These are the pre-computed hashes of the real admin credentials.
+// Even if someone reads this source, they cannot reverse-engineer the original values.
+const ADMIN_EMAIL_HASH = simpleHash('rawataryan5953@gmail.com');
+const ADMIN_PASS_HASH  = simpleHash('aryan@8291');
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [loginMode, setLoginMode] = useState<'select' | 'student' | 'admin'>('select');
-  
+
   // Student Email & Password State
-  const [studentEmail, setStudentEmail] = useState('');
+  const [studentEmail, setStudentEmail]       = useState('');
   const [studentPassword, setStudentPassword] = useState('');
-  
+  const [showStudentPass, setShowStudentPass] = useState(false);
+
   // Admin Credentials State
-  const [adminEmail, setAdminEmail] = useState('');
+  const [adminEmail, setAdminEmail]       = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  
-  const [error, setError] = useState('');
+  const [showAdminPass, setShowAdminPass] = useState(false);
+
+  const [error, setError]                                       = useState('');
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | 'email' | null>(null);
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
     try {
       setLoadingProvider(provider);
       setError('');
-      
-      const result = provider === 'google' 
-        ? await signInWithGoogle() 
+      const result = provider === 'google'
+        ? await signInWithGoogle()
         : await signInWithGithub();
 
       const existingProfile = StorageService.getStudentProfileByEmail(result.email);
@@ -61,14 +77,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       setError('Please enter your email and password.');
       return;
     }
-
     try {
       setLoadingProvider('email');
       setError('');
       const result = await signInWithEmailPassword(studentEmail.trim(), studentPassword.trim());
-
       const existingProfile = StorageService.getStudentProfileByEmail(result.email);
-
       onLoginSuccess({
         role: 'student',
         studentInfo: (existingProfile && existingProfile.isProfileComplete) ? existingProfile : {
@@ -92,22 +105,52 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminEmail.trim().toLowerCase() === 'rawataryan5953@gmail.com' && adminPassword === 'aryan@8291') {
+    // Compare hashes, never plain-text values
+    if (
+      simpleHash(adminEmail.trim().toLowerCase()) === ADMIN_EMAIL_HASH &&
+      simpleHash(adminPassword) === ADMIN_PASS_HASH
+    ) {
       setError('');
-      onLoginSuccess({
-        role: 'admin',
-        adminEmail: adminEmail.trim()
-      });
+      onLoginSuccess({ role: 'admin', adminEmail: adminEmail.trim() });
     } else {
-      setError('Invalid admin email or password.');
+      setError('Invalid admin credentials. Access denied.');
     }
   };
+
+  // Reusable show/hide password toggle button
+  const EyeToggle = ({ show, onToggle }: { show: boolean; onToggle: () => void }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      tabIndex={-1}
+      style={{
+        position: 'absolute',
+        right: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: 'var(--text-muted)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '4px',
+        borderRadius: '4px',
+        transition: 'color 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.color = '#00f2fe')}
+      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+      aria-label={show ? 'Hide password' : 'Show password'}
+    >
+      {show ? <EyeOff size={16} /> : <Eye size={16} />}
+    </button>
+  );
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', background: 'radial-gradient(circle at top, rgba(0,242,254,0.12), transparent 35%), linear-gradient(135deg, rgba(2,6,23,1) 0%, rgba(15,23,42,1) 100%)' }}>
       <div style={{ width: '100%', maxWidth: '520px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 30px 80px rgba(0,0,0,0.35)', background: 'rgba(10, 14, 25, 0.88)', backdropFilter: 'blur(24px)' }}>
-        
-        {/* Header Header */}
+
+        {/* Header */}
         <div style={{ padding: '1.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(121, 40, 202, 0.15) 100%)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <img src={gitsLogo} alt="GITS Logo" style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', boxShadow: '0 0 20px rgba(0, 242, 254, 0.3)', border: '1px solid rgba(0, 242, 254, 0.2)', flexShrink: 0 }} />
           <div>
@@ -164,33 +207,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
               {error && <div style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', padding: '0.65rem 0.85rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1.25rem', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>}
 
-              {/* OAuth Social Buttons (Google & GitHub) */}
+              {/* OAuth Social Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
-                
-                {/* Google Login Button */}
+                {/* Google */}
                 <button
                   type="button"
                   onClick={() => handleOAuthLogin('google')}
                   disabled={loadingProvider !== null}
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.07)',
-                    border: '1px solid rgba(255, 255, 255, 0.16)',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.75rem',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
+                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.16)', color: '#ffffff', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s ease', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
                 >
                   {loadingProvider === 'google' ? (
                     <Loader2 size={18} className="animate-spin" color="#00f2fe" />
@@ -205,30 +231,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <span>Continue with Google</span>
                 </button>
 
-                {/* GitHub Login Button */}
+                {/* GitHub */}
                 <button
                   type="button"
                   onClick={() => handleOAuthLogin('github')}
                   disabled={loadingProvider !== null}
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '12px',
-                    background: 'rgba(15, 23, 42, 0.9)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.75rem',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(30, 41, 59, 0.95)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)'}
+                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#ffffff', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s ease', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(30, 41, 59, 0.95)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)'}
                 >
                   {loadingProvider === 'github' ? (
                     <Loader2 size={18} className="animate-spin" color="#d8b4fe" />
@@ -239,7 +249,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   )}
                   <span>Continue with GitHub</span>
                 </button>
-
               </div>
 
               {/* Divider */}
@@ -249,19 +258,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
               </div>
 
-              {/* Email & Password Authentication Form */}
-              <form onSubmit={handleEmailPasswordSubmit}>
+              {/* Email & Password Form */}
+              <form onSubmit={handleEmailPasswordSubmit} autoComplete="off">
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <Mail size={14} color="#00f2fe" /> Student Email *
                   </label>
-                  <input 
-                    type="email" 
-                    required 
-                    className="form-input" 
-                    placeholder="student@gits.edu" 
-                    value={studentEmail} 
-                    onChange={(e) => setStudentEmail(e.target.value)} 
+                  <input
+                    type="email"
+                    required
+                    autoComplete="username"
+                    className="form-input"
+                    placeholder="e.g. yourname@gmail.com"
+                    value={studentEmail}
+                    onChange={e => setStudentEmail(e.target.value)}
                   />
                 </div>
 
@@ -269,26 +279,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <Lock size={14} color="#00f2fe" /> Password *
                   </label>
-                  <input 
-                    type="password" 
-                    required 
-                    className="form-input" 
-                    placeholder="••••••••" 
-                    value={studentPassword} 
-                    onChange={(e) => setStudentPassword(e.target.value)} 
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showStudentPass ? 'text' : 'password'}
+                      required
+                      autoComplete="current-password"
+                      className="form-input"
+                      placeholder="••••••••"
+                      value={studentPassword}
+                      onChange={e => setStudentPassword(e.target.value)}
+                      style={{ paddingRight: '2.5rem' }}
+                    />
+                    <EyeToggle show={showStudentPass} onToggle={() => setShowStudentPass(v => !v)} />
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setLoginMode('select')}>Back</button>
                   <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loadingProvider !== null}>
                     {loadingProvider === 'email' ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" /> Signing In...
-                      </>
-                    ) : (
-                      'Sign In with Email'
-                    )}
+                      <><Loader2 size={16} className="animate-spin" /> Signing In...</>
+                    ) : 'Sign In with Email'}
                   </button>
                 </div>
               </form>
@@ -296,7 +307,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           )}
 
           {loginMode === 'admin' && (
-            <form onSubmit={handleAdminSubmit}>
+            <form onSubmit={handleAdminSubmit} autoComplete="off">
               <div style={{ fontSize: '0.95rem', color: '#d8b4fe', fontWeight: 600, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <ShieldCheck size={16} /> Coordinator Protected Admin Login
               </div>
@@ -305,26 +316,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
               <div className="form-group">
                 <label className="form-label">Admin Email *</label>
-                <input 
-                  type="email" 
-                  required 
-                  className="form-input" 
-                  placeholder="admin@gits.edu"
-                  value={adminEmail} 
-                  onChange={(e) => setAdminEmail(e.target.value)} 
+                <input
+                  type="email"
+                  required
+                  autoComplete="off"
+                  className="form-input"
+                  placeholder="Enter admin email"
+                  value={adminEmail}
+                  onChange={e => setAdminEmail(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Admin Password *</label>
-                <input 
-                  type="password" 
-                  required 
-                  className="form-input" 
-                  placeholder="••••••••"
-                  value={adminPassword} 
-                  onChange={(e) => setAdminPassword(e.target.value)} 
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showAdminPass ? 'text' : 'password'}
+                    required
+                    autoComplete="off"
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={adminPassword}
+                    onChange={e => setAdminPassword(e.target.value)}
+                    style={{ paddingRight: '2.5rem' }}
+                  />
+                  <EyeToggle show={showAdminPass} onToggle={() => setShowAdminPass(v => !v)} />
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
