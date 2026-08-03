@@ -218,16 +218,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Registrations Export CSV & Actions
   // ----------------------------------------------------
   const handleExportCSV = () => {
+    const targetRegistrations = filteredRegistrations;
+    if (targetRegistrations.length === 0) {
+      alert('No registrations to export for the selected filter.');
+      return;
+    }
+
     const headers = ['Ticket Code', 'Event Title', 'Student Name', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Registered At'];
-    const rows = registrations.map(r => [
+    const rows = targetRegistrations.map(r => [
       r.ticketCode,
-      `"${r.eventTitle}"`,
-      `"${r.studentName}"`,
+      `"${r.eventTitle.replace(/"/g, '""')}"`,
+      `"${r.studentName.replace(/"/g, '""')}"`,
       r.rollNo,
       r.grNo || 'N/A',
       r.email,
       r.phone || 'N/A',
-      `"${r.department}"`,
+      `"${r.department.replace(/"/g, '""')}"`,
       r.year,
       r.div || 'N/A',
       r.status,
@@ -238,7 +244,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `GITS_Event_Registrations_${new Date().toISOString().split('T')[0]}.csv`);
+    
+    let fileName = `GITS_Registrations_${new Date().toISOString().split('T')[0]}.csv`;
+    if (regEventFilter !== 'All') {
+      const selectedEvt = events.find(e => e.id === regEventFilter);
+      if (selectedEvt) {
+        const cleanTitle = selectedEvt.title.replace(/[^a-zA-Z0-9]/g, '_');
+        fileName = `GITS_Registrations_${cleanTitle}_${new Date().toISOString().split('T')[0]}.csv`;
+      }
+    }
+
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
