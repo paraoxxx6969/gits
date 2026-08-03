@@ -20,7 +20,7 @@ import {
   onSnapshot,
   type Firestore
 } from 'firebase/firestore';
-import type { GalleryPhoto, ClubEvent, EventMemory } from '../types';
+import type { GalleryPhoto, ClubEvent, EventMemory, Announcement } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDTzVypF6Tv7e3PrDIkbqANKDjlg9gS0EI",
@@ -492,6 +492,74 @@ export function subscribeToRegistrations(onUpdate: (regs: any[]) => void): () =>
       }, (err) => console.warn('Registrations Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing registrations listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}
+
+/**
+ * Cloud Firestore Real-time Sync for Announcements / Broadcast Banners
+ */
+export async function saveAnnouncementToFirestore(announcement: Announcement): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'announcements', announcement.id);
+    await setDoc(ref, announcement);
+    console.log("Synced announcement to Cloud Firestore:", announcement.id);
+  } catch (err: any) {
+    console.error('Failed to sync announcement to Cloud Firestore:', err);
+  }
+}
+
+export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'announcements', announcementId);
+    await deleteDoc(ref);
+    console.log("Deleted announcement from Cloud Firestore:", announcementId);
+  } catch (err) {
+    console.error('Failed to delete announcement from Firestore:', err);
+  }
+}
+
+export function subscribeToAnnouncements(onUpdate: (announcements: Announcement[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'announcements');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const announcements: Announcement[] = [];
+        snapshot.forEach((docSnap) => {
+          announcements.push(docSnap.data() as Announcement);
+        });
+        announcements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (announcements.length > 0) {
+          try { localStorage.setItem('gits_club_announcements_v2', JSON.stringify(announcements)); } catch (e) { }
+          onUpdate(announcements);
+        }
+      }, (err) => console.warn('Announcements Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing announcements listener:', err);
     }
   };
 

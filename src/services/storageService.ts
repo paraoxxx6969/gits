@@ -6,7 +6,9 @@ import {
   deleteEventFromFirestore,
   saveMemoryToFirestore,
   deleteMemoryFromFirestore,
-  saveRegistrationToFirestore
+  saveRegistrationToFirestore,
+  saveAnnouncementToFirestore,
+  deleteAnnouncementFromFirestore
 } from './firebase';
 
 const STORAGE_KEYS = {
@@ -402,6 +404,7 @@ export const StorageService = {
     };
     announcements.unshift(newAnc);
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements));
+    saveAnnouncementToFirestore(newAnc);
     return newAnc;
   },
 
@@ -411,6 +414,7 @@ export const StorageService = {
     if (!anc) return false;
     anc.active = !anc.active;
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements));
+    saveAnnouncementToFirestore(anc);
     return true;
   },
 
@@ -419,6 +423,7 @@ export const StorageService = {
     const filtered = announcements.filter(a => a.id !== id);
     if (filtered.length === announcements.length) return false;
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(filtered));
+    deleteAnnouncementFromFirestore(id);
     return true;
   },
 
