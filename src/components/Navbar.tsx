@@ -213,6 +213,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <ArrowUpRight size={14} className="navbar__mobile-arrow" />
                 </motion.button>
               ))}
+
+              {userSession.role !== 'guest' && (
+                <motion.button
+                  onClick={() => {
+                    onLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="navbar__mobile-link navbar__mobile-link--logout"
+                  style={{
+                    marginTop: '0.6rem',
+                    color: '#f87171',
+                    borderColor: 'rgba(239, 68, 68, 0.35)',
+                    background: 'rgba(239, 68, 68, 0.12)'
+                  }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: navLinks.length * 0.05, duration: 0.35 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <LogOut size={16} />
+                  <span style={{ fontWeight: 600 }}>Log Out ({userSession.role})</span>
+                </motion.button>
+              )}
             </motion.div>
           </>
         )}

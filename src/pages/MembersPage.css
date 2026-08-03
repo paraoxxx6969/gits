@@ -370,18 +370,16 @@
   .members-page .m-team-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  .members-page .m-stats-inner {
-    grid-template-columns: 1fr 1fr;
-    padding: 50px 30px;
-  }
 }
-@media (max-width: 750px) {
+
+@media (max-width: 768px) {
   .members-page .m-hero {
-    padding: 100px 16px 40px;
+    padding: 120px 16px 40px;
+    min-height: auto;
   }
   .members-page .m-small-team { font-size: 10vw; }
   .members-page .m-big-text { font-size: 24vw; }
-  .members-page .m-cards-row { height: 220px; top: 52%; }
+  .members-page .m-cards-row { height: 220px; top: 48%; }
   .members-page .m-card-1 { width: 80px;  height: 110px; left: 0%;  top: 20px; }
   .members-page .m-card-2 { width: 90px;  height: 130px; left: 10%; top: 35px; }
   .members-page .m-card-3 { width: 110px; height: 150px; left: 22%; top: 15px; }
@@ -391,15 +389,52 @@
   .members-page .m-card-7 { width: 100px; height: 140px; left: 74%; top: 20px; }
   .members-page .m-card-8 { width: 80px;  height: 110px; left: 87%; top: 35px; }
   .members-page .m-subline { margin-top: 120px; }
-  .members-page .m-team-section { padding: 80px 20px 40px; }
+
+  .members-page .m-team-section {
+    padding: 60px 16px 100px;
+  }
+
+  .members-page .m-team-head {
+    margin-bottom: 32px;
+  }
+
   .members-page .m-team-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    padding-bottom: 20px;
   }
-  .members-page .m-stats { padding: 20px 20px 60px; }
-  .members-page .m-stats-inner {
-    grid-template-columns: 1fr 1fr;
-    padding: 40px 24px;
-    gap: 24px;
+
+  .members-page .m-t-card {
+    aspect-ratio: 3 / 4;
+    border-radius: 16px;
+  }
+
+  /* Center the last card if total crew count is odd (e.g. 9 members) */
+  .members-page .m-team-grid > .m-t-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    max-width: 260px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Always display member details on mobile touchscreens without hover requirement */
+  .members-page .m-t-meta {
+    opacity: 1;
+    transform: translateY(0);
+    padding: 8px 12px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    background: rgba(8, 12, 20, 0.85);
+  }
+
+  .members-page .m-t-meta .m-nm {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .members-page .m-t-meta .m-rl {
+    font-size: 10px;
+    margin-top: 2px;
   }
 }
