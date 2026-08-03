@@ -330,7 +330,8 @@ export async function saveEventToFirestore(event: ClubEvent): Promise<void> {
       try { await signInAnonymously(auth); } catch (e) { }
     }
     const ref = doc(db, 'club_events', event.id);
-    await setDoc(ref, event);
+    const cleanData = JSON.parse(JSON.stringify(event));
+    await setDoc(ref, cleanData);
     console.log("Synced event to Cloud Firestore:", event.id);
   } catch (err: any) {
     console.error('Failed to sync event to Cloud Firestore:', err);
@@ -396,7 +397,8 @@ export async function saveMemoryToFirestore(memory: EventMemory): Promise<void> 
       try { await signInAnonymously(auth); } catch (e) { }
     }
     const ref = doc(db, 'event_memories', memory.id);
-    await setDoc(ref, memory);
+    const cleanData = JSON.parse(JSON.stringify(memory));
+    await setDoc(ref, cleanData);
     console.log("Synced memory to Cloud Firestore:", memory.id);
   } catch (err: any) {
     console.error('Failed to sync memory to Cloud Firestore:', err);
@@ -463,7 +465,8 @@ export async function saveRegistrationToFirestore(reg: any): Promise<void> {
       try { await signInAnonymously(auth); } catch (e) { }
     }
     const ref = doc(db, 'event_registrations', reg.id);
-    await setDoc(ref, reg);
+    const cleanData = JSON.parse(JSON.stringify(reg));
+    await setDoc(ref, cleanData);
     console.log("Synced registration to Cloud Firestore:", reg.id);
   } catch (err: any) {
     console.error('Failed to sync registration to Cloud Firestore:', err);
@@ -517,7 +520,8 @@ export async function saveAnnouncementToFirestore(announcement: Announcement): P
       try { await signInAnonymously(auth); } catch (e) { }
     }
     const ref = doc(db, 'announcements', announcement.id);
-    await setDoc(ref, announcement);
+    const cleanData = JSON.parse(JSON.stringify(announcement));
+    await setDoc(ref, cleanData);
     console.log("Synced announcement to Cloud Firestore:", announcement.id);
   } catch (err: any) {
     console.error('Failed to sync announcement to Cloud Firestore:', err);
@@ -553,10 +557,8 @@ export function subscribeToAnnouncements(onUpdate: (announcements: Announcement[
           announcements.push(docSnap.data() as Announcement);
         });
         announcements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        if (announcements.length > 0) {
-          try { localStorage.setItem('gits_club_announcements_v2', JSON.stringify(announcements)); } catch (e) { }
-          onUpdate(announcements);
-        }
+        try { localStorage.setItem('gits_club_announcements_v2', JSON.stringify(announcements)); } catch (e) { }
+        onUpdate(announcements);
       }, (err) => console.warn('Announcements Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing announcements listener:', err);
