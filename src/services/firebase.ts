@@ -137,24 +137,22 @@ export interface OAuthUserResult {
  * Sign in with Google Popup
  */
 export async function signInWithGoogle(): Promise<OAuthUserResult> {
-  if (!isFirebaseConfigured || !auth) {
-    await new Promise(res => setTimeout(res, 800));
-    return {
-      name: "Alex Morgan (Google)",
-      email: "alex.morgan@gmail.com",
-      photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      rollNo: "23IT1042",
-      provider: 'google'
-    };
+  if (!auth) {
+    throw new Error("Authentication service is unavailable. Please check your network connection.");
   }
 
   const result: UserCredential = await signInWithPopup(auth, googleProvider);
   const user = result.user;
+
+  if (!user.email) {
+    throw new Error("Google sign-in did not return a valid email address. Only authorized Gmail accounts are allowed.");
+  }
+
   const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
 
   return {
-    name: user.displayName || 'Google Student User',
-    email: user.email || 'student@gits.edu',
+    name: user.displayName || user.email.split('@')[0],
+    email: user.email,
     photoURL: user.photoURL || undefined,
     rollNo: derivedRoll,
     provider: 'google'
@@ -165,24 +163,22 @@ export async function signInWithGoogle(): Promise<OAuthUserResult> {
  * Sign in with GitHub Popup
  */
 export async function signInWithGithub(): Promise<OAuthUserResult> {
-  if (!isFirebaseConfigured || !auth) {
-    await new Promise(res => setTimeout(res, 800));
-    return {
-      name: "Alex Morgan (GitHub)",
-      email: "alex.morgan@github.com",
-      photoURL: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      rollNo: "23IT1088",
-      provider: 'github'
-    };
+  if (!auth) {
+    throw new Error("Authentication service is unavailable. Please check your network connection.");
   }
 
   const result: UserCredential = await signInWithPopup(auth, githubProvider);
   const user = result.user;
+
+  if (!user.email) {
+    throw new Error("GitHub sign-in did not return a valid email address. Only authorized accounts are allowed.");
+  }
+
   const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
 
   return {
-    name: user.displayName || user.email?.split('@')[0] || 'GitHub Student User',
-    email: user.email || 'student@github.com',
+    name: user.displayName || user.email.split('@')[0],
+    email: user.email,
     photoURL: user.photoURL || undefined,
     rollNo: derivedRoll,
     provider: 'github'
@@ -193,15 +189,8 @@ export async function signInWithGithub(): Promise<OAuthUserResult> {
  * Sign in / Register with Email and Password
  */
 export async function signInWithEmailPassword(email: string, pass: string): Promise<OAuthUserResult> {
-  if (!isFirebaseConfigured || !auth) {
-    await new Promise(res => setTimeout(res, 600));
-    const nameFromEmail = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return {
-      name: nameFromEmail || "Student User",
-      email: email,
-      rollNo: `23IT${Math.floor(1000 + Math.random() * 9000)}`,
-      provider: 'email'
-    };
+  if (!auth) {
+    throw new Error("Authentication service is unavailable. Please check your network connection.");
   }
 
   let userCredential: UserCredential;
@@ -209,7 +198,6 @@ export async function signInWithEmailPassword(email: string, pass: string): Prom
     userCredential = await signInWithEmailAndPassword(auth, email, pass);
   } catch (err: any) {
     if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
-      // Create user if not registered yet
       userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     } else {
       throw err;
@@ -217,13 +205,13 @@ export async function signInWithEmailPassword(email: string, pass: string): Prom
   }
 
   const user = userCredential.user;
-  const nameFromEmail = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  const derivedRoll = `23IT${Math.floor(1000 + Math.random() * 9000)}`;
+  const userEmail = user.email || email;
+  const nameFromEmail = userEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   return {
     name: user.displayName || nameFromEmail || 'Student User',
-    email: user.email || email,
-    rollNo: derivedRoll,
+    email: userEmail,
+    rollNo: `23IT${Math.floor(1000 + Math.random() * 9000)}`,
     provider: 'email'
   };
 }

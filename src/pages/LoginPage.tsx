@@ -13,8 +13,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [loginMode, setLoginMode] = useState<'select' | 'student' | 'admin'>('select');
   
   // Student Email & Password State
-  const [studentEmail, setStudentEmail] = useState('alex@student.gits.edu');
-  const [studentPassword, setStudentPassword] = useState('student123');
+  const [studentEmail, setStudentEmail] = useState('');
+  const [studentPassword, setStudentPassword] = useState('');
   
   // Admin Credentials State
   const [adminEmail, setAdminEmail] = useState('');
