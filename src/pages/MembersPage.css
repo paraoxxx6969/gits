@@ -17,7 +17,7 @@
   --m-purple-4: #ddd6fe;
 
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden removed — it was clipping the team grid for large crews */
 }
 
 /* Grain overlay */
@@ -222,7 +222,7 @@
 
 /* ============ TEAM GRID ============ */
 .members-page .m-team-section {
-  padding: 140px 40px 80px;
+  padding: 140px 40px 120px;
   position: relative;
   z-index: 5;
 }
@@ -279,11 +279,12 @@
 }
 
 .members-page .m-team-grid {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  /* 5 columns on large screens — handles 15–20 members gracefully */
+  grid-template-columns: repeat(5, 1fr);
+  gap: 22px;
 }
 
 .members-page .m-t-card {
@@ -366,12 +367,30 @@
 
 
 /* ============ RESPONSIVE ============ */
+
+/* Medium desktops: 1100–1400px → 4 columns */
+@media (max-width: 1400px) {
+  .members-page .m-team-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Tablets: 900–1100px → 3 columns */
 @media (max-width: 1100px) {
   .members-page .m-team-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
+/* Tablet portrait: 600–900px → 3 columns still fine */
+@media (max-width: 900px) {
+  .members-page .m-team-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+}
+
+/* Mobile: ≤768px */
 @media (max-width: 768px) {
   .members-page .m-hero {
     padding: 120px 16px 40px;
@@ -391,50 +410,59 @@
   .members-page .m-subline { margin-top: 120px; }
 
   .members-page .m-team-section {
-    padding: 60px 16px 100px;
+    padding: 60px 14px 120px;
   }
 
   .members-page .m-team-head {
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
 
   .members-page .m-team-grid {
+    /* Solid 2-column grid for any member count on mobile */
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    padding-bottom: 20px;
+    gap: 14px;
   }
 
   .members-page .m-t-card {
     aspect-ratio: 3 / 4;
-    border-radius: 16px;
+    border-radius: 14px;
   }
 
-  /* Center the last card if total crew count is odd (e.g. 9 members) */
-  .members-page .m-team-grid > .m-t-card:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-    max-width: 260px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  /* Always display member details on mobile touchscreens without hover requirement */
+  /* Always display member name/role on mobile (no hover on touch) */
   .members-page .m-t-meta {
     opacity: 1;
     transform: translateY(0);
-    padding: 8px 12px;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    background: rgba(8, 12, 20, 0.85);
+    padding: 8px 10px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    background: rgba(8, 12, 20, 0.88);
   }
 
   .members-page .m-t-meta .m-nm {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .members-page .m-t-meta .m-rl {
     font-size: 10px;
-    margin-top: 2px;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Very small phones: ≤400px → tighter gap */
+@media (max-width: 400px) {
+  .members-page .m-team-grid {
+    gap: 10px;
+  }
+  .members-page .m-team-section {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
