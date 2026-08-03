@@ -117,7 +117,8 @@ export const App: React.FC = () => {
   };
 
   const handleRegistrationSuccess = (reg: EventRegistration) => {
-    const targetEvent = events.find(e => e.id === reg.eventId) || registeringEvent;
+    // Capture the event before clearing registeringEvent
+    const targetEvent = registeringEvent || events.find(e => e.id === reg.eventId);
     setRegisteringEvent(null);
     refreshData();
     if (targetEvent) {
@@ -126,9 +127,36 @@ export const App: React.FC = () => {
   };
 
   const handleViewTicketFromStudentDashboard = (reg: EventRegistration) => {
+    // Try to find the matching event from the loaded events list
     const targetEvent = events.find(e => e.id === reg.eventId);
     if (targetEvent) {
       setGeneratedPass({ registration: reg, event: targetEvent });
+    } else {
+      // Fallback: build a minimal event shape from the data stored in the registration itself
+      // so the ticket always opens even if the event was deleted or Firestore hasn't synced
+      const fallbackEvent = {
+        id: reg.eventId,
+        title: reg.eventTitle,
+        slug: reg.eventId,
+        category: 'Workshop' as const,
+        status: 'Completed' as const,
+        shortDescription: '',
+        description: '',
+        date: reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString('en-IN') : 'N/A',
+        time: '',
+        venue: 'DMCE Campus',
+        capacity: 0,
+        registeredCount: 0,
+        image: '',
+        tags: [],
+        prerequisites: [],
+        fee: 'Free' as const,
+        speaker: { name: '', role: '', organization: '', avatar: '' },
+        schedule: [],
+        organizer: 'GITS DMCE',
+        createdAt: reg.registeredAt,
+      };
+      setGeneratedPass({ registration: reg, event: fallbackEvent });
     }
   };
 
