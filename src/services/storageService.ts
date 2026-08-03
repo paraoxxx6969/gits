@@ -307,6 +307,9 @@ export const StorageService = {
     
     const targetEvent = events.find(e => e.id === data.eventId);
     if (targetEvent) {
+      if ((targetEvent.registeredCount || 0) >= targetEvent.capacity) {
+        throw new Error('Event is already full. Registration not allowed.');
+      }
       targetEvent.registeredCount = (targetEvent.registeredCount || 0) + 1;
       this.saveEvents(events);
       saveEventToFirestore(targetEvent);

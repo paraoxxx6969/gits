@@ -4,7 +4,7 @@ import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, X, Globe, Upload, Image as ImageIcon 
+  Search, Download, X, Globe, Upload, Image as ImageIcon, Users 
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -428,6 +428,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('gallery')}
           >
             <Globe size={16} /> 3D Globe Gallery ({galleryPhotos.length})
+          </button>
+
+          <button 
+            className={`btn btn-sm ${activeTab === 'registrations' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('registrations')}
+          >
+            <Users size={16} /> Student Registrations ({registrations.length})
           </button>
         </div>
 

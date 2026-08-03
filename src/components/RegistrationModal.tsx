@@ -67,6 +67,15 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setError('');
 
     try {
+      // Re-check latest event data to prevent over-registration
+      const latestEvents = StorageService.getEvents();
+      const latestEvent = latestEvents.find(e => e.id === event.id);
+      if (latestEvent && latestEvent.registeredCount >= latestEvent.capacity) {
+        setError('Sorry, this event is now full! Seats were taken while you were filling the form.');
+        setSubmitting(false);
+        return;
+      }
+
       const reg = StorageService.addRegistration({
         eventId: event.id,
         eventTitle: event.title,
@@ -90,8 +99,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
       setSubmitting(false);
       onSuccess(reg);
-    } catch {
-      setError('Registration failed. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Registration failed. Please try again.');
       setSubmitting(false);
     }
   };
