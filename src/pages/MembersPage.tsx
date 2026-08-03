@@ -16,6 +16,7 @@ const FALLBACK_MEMBERS = [
   { id: 'fb-6', name: 'Ravi Joshi', role: 'Cloud & DevOps Coordinator', img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=600&fit=crop&crop=faces&q=80' },
   { id: 'fb-7', name: 'Ananya Deshmukh', role: 'Events & PR Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=faces&q=80' },
   { id: 'fb-8', name: 'Kavya Iyer', role: 'Design & Media Head', img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-9', name: 'Rohan Verma', role: 'App Development Lead', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=600&fit=crop&crop=faces&q=80' },
 ];
 
 const CARD_ROTS_BASE  = [-9, -5, -2, 3, 0, 4, 7, -4];
@@ -336,9 +337,9 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
           </div>
         </div>
 
-        {/* Card row of portraits */}
+        {/* Card row of top 8 main portraits */}
         <div className="m-cards-row">
-          {MEMBERS.map((member, i) => (
+          {MEMBERS.slice(0, 8).map((member, i) => (
             <div
               key={member.name}
               className={`m-card m-card-${i + 1}`}
@@ -351,15 +352,14 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
           ))}
         </div>
 
-        <div className="m-subline" ref={sublineRef}>
-        </div>
+        <div className="m-subline" ref={sublineRef} />
       </section>
 
       {/* ===== TEAM GRID ===== */}
       <section className="m-team-section">
         <div className="m-team-head">
           <div>
-            <div className="m-eyebrow">The Crew · Eight strong</div>
+            <div className="m-eyebrow">The Crew · {MEMBERS.length} members</div>
             <h2>Developers, designers<br />and the <em>quietly brilliant</em>.</h2>
           </div>
           <p>Every person you see here drives every event we run. No middle layer, no handoffs to strangers — just direct work with the people doing it.</p>
@@ -381,7 +381,7 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
       {/* ===== STATS ===== */}
       <section className="m-stats">
         <div className="m-stats-inner" ref={statsInnerRef}>
-          <h3>Eight humans.<br />One <em>tight ship</em>.</h3>
+          <h3>{MEMBERS.length} humans.<br />One <em>tight ship</em>.</h3>
 
           <div className="m-stat-block" data-count="62" ref={(el) => { statsBlocksRef.current[0] = el; }}>
             <div className="m-num"><span>0</span></div>

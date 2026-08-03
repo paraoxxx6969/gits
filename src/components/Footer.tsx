@@ -3,10 +3,9 @@ import { Terminal, Globe, Share2, Code2, Mail, MapPin } from 'lucide-react';
 
 interface FooterProps {
   setActiveTab: (tab: string) => void;
-  onOpenLoginModal: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal: _onOpenLoginModal }) => {
+export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
   return (
     <footer style={{ background: '#04070d', borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '4rem 0 2rem 0', marginTop: '5rem' }}>
       <div className="container">
@@ -70,7 +69,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal: 
 
           {/* Col 3: Contact Info */}
           <div>
-            <h4 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Club of DMCE</h4>
+            <h4 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Club Of DMCE</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                 <MapPin size={18} color="#00f2fe" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -82,9 +81,6 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal: 
               </div>
             </div>
           </div>
-
-
-
 
         </div>
 

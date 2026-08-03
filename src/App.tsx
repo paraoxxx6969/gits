@@ -224,10 +224,7 @@ export const App: React.FC = () => {
 
       {/* Footer (hidden on Memory Gallery page) */}
       {activeTab !== 'gallery' && (
-        <Footer 
-          setActiveTab={setActiveTab}
-          onOpenLoginModal={() => setIsAuthenticated(false)}
-        />
+        <Footer setActiveTab={setActiveTab} />
       )}
 
       {/* Profile Onboarding / Edit Modal */}
