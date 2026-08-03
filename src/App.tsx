@@ -18,6 +18,7 @@ import { RegistrationModal } from './components/RegistrationModal';
 import { DigitalPassModal } from './components/DigitalPassModal';
 import { StudentProfileModal } from './components/StudentProfileModal';
 import { LoginPage } from './pages/LoginPage';
+import { VerifyTicketPage } from './pages/VerifyTicketPage';
 
 import { subscribeToEvents, subscribeToMemories, subscribeToRegistrations, subscribeToAnnouncements, subscribeToCrew } from './services/firebase';
 
@@ -224,6 +225,27 @@ export const App: React.FC = () => {
      !userSession.studentInfo?.branch ||
      !userSession.studentInfo?.year)
   );
+
+  // Standalone Clean White Ticket Verification Page for Google Lens QR Scans
+  const searchParams = new URLSearchParams(window.location.search);
+  const isVerifyMode = searchParams.get('verify') === '1';
+
+  if (isVerifyMode) {
+    const ticketData = {
+      ticket: searchParams.get('ticket') || 'GITS-VERIFIED-PASS',
+      name: searchParams.get('name') || 'Student Attendee',
+      roll: searchParams.get('roll') || 'N/A',
+      gr: searchParams.get('gr') || '',
+      event: searchParams.get('event') || 'GITS Tech Club Event',
+      dept: searchParams.get('dept') || 'Information Technology',
+      year: searchParams.get('year') || 'TE',
+      div: searchParams.get('div') || '',
+      email: searchParams.get('email') || '',
+      phone: searchParams.get('phone') || '',
+      college: searchParams.get('college') || 'Datta Meghe College of Engineering (DMCE)',
+    };
+    return <VerifyTicketPage ticketData={ticketData} />;
+  }
 
   if (!isAuthenticated && userSession.role === 'guest') {
     return (

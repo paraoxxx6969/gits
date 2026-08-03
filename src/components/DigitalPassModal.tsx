@@ -24,6 +24,7 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
       ? 'https://gits-dmce.vercel.app' 
       : window.location.origin;
     const params = new URLSearchParams({
+      verify: '1',
       ticket: registration.ticketCode,
       name: registration.studentName,
       roll: registration.rollNo,
@@ -31,7 +32,10 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
       event: event.title,
       dept: registration.department,
       year: registration.year,
-      div: registration.div || ''
+      div: registration.div || '',
+      email: registration.email || '',
+      phone: registration.phone || '',
+      college: registration.collegeName || 'Datta Meghe College of Engineering (DMCE)'
     });
     return `${origin}/?${params.toString()}`;
   }, [registration, event]);
@@ -48,7 +52,14 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
       <div
         className="modal-container"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '560px', background: '#0a0f1d', padding: 0, overflow: 'hidden' }}
+        style={{
+          maxWidth: '560px',
+          background: '#0a0f1d',
+          padding: 0,
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
         {/* Top Notification Banner */}
         <div style={{
