@@ -4,7 +4,7 @@ import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
+  Search, Download, X, Globe, Upload, Image as ImageIcon 
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -350,13 +350,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleResetDemoData = () => {
-    if (window.confirm('Reset all events, registrations, and memories to demo defaults?')) {
-      StorageService.resetAllData();
-      setGalleryPhotos(StorageService.getGalleryPhotos());
-      onRefreshData();
-    }
-  };
 
   // Filtered registrations list
   const filteredRegistrations = registrations.filter(r => {
@@ -383,10 +376,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
 
-            <button className="btn btn-secondary btn-sm" onClick={handleResetDemoData} title="Reset to default sample data">
-              <RefreshCw size={14} /> Reset Demo Data
-            </button>
-            
+
             <button className="btn btn-primary btn-sm" onClick={handleOpenNewEvent}>
               <Plus size={16} /> Add New Event
             </button>
