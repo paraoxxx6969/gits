@@ -20,28 +20,18 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
   // Build the QR payload — all student + event info in structured text
   const qrPayload = useMemo(() => {
     if (!registration || !event) return '';
-    const lines = [
-      `GITS DMCE EVENT PASS`,
-      `─────────────────────`,
-      `TICKET: ${registration.ticketCode}`,
-      `EVENT:  ${event.title}`,
-      `DATE:   ${event.date}  ${event.time}`,
-      `VENUE:  ${event.venue}`,
-      `─────────────────────`,
-      `NAME:   ${registration.studentName}`,
-      `ROLL:   ${registration.rollNo}`,
-      ...(registration.grNo ? [`GR NO:  ${registration.grNo}`] : []),
-      `EMAIL:  ${registration.email}`,
-      ...(registration.phone ? [`PHONE:  ${registration.phone}`] : []),
-      `DEPT:   ${registration.department}`,
-      `YEAR:   ${registration.year}`,
-      ...(registration.div ? [`DIV:    ${registration.div}`] : []),
-      ...(registration.collegeName ? [`COLLEGE:${registration.collegeName}`] : []),
-      `─────────────────────`,
-      `STATUS: ${registration.status}`,
-      `REGISTERED: ${new Date(registration.registeredAt).toLocaleString('en-IN')}`,
-    ];
-    return lines.join('\n');
+    return [
+      `GITS EVENT PASS: ${registration.ticketCode}`,
+      `Attendee: ${registration.studentName}`,
+      `Roll No: ${registration.rollNo}`,
+      `GR No: ${registration.grNo || 'N/A'}`,
+      `Dept: ${registration.department} (${registration.year}${registration.div ? `-${registration.div}` : ''})`,
+      `Email: ${registration.email}`,
+      `Phone: ${registration.phone || 'N/A'}`,
+      `Event: ${event.title}`,
+      `Date & Venue: ${event.date} @ ${event.venue}`,
+      `Status: ${registration.status}`
+    ].join('\n');
   }, [registration, event]);
 
   // Early return AFTER all hooks
@@ -181,13 +171,14 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
               </div>
 
               {/* Real QR Code */}
-              <div style={{ flexShrink: 0, background: '#ffffff', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 242, 254, 0.25)' }}>
+              <div style={{ flexShrink: 0, background: '#ffffff', padding: '6px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 242, 254, 0.25)' }}>
                 <QRCodeSVG
                   value={qrPayload}
-                  size={100}
+                  size={130}
                   bgColor="#ffffff"
-                  fgColor="#080c14"
+                  fgColor="#000000"
                   level="M"
+                  includeMargin={true}
                   style={{ display: 'block' }}
                 />
               </div>
