@@ -36,7 +36,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         studentInfo: {
           name: result.name,
           rollNo: result.rollNo,
-          email: result.email
+          grNo: '',
+          branch: 'Information Technology',
+          year: 'TE',
+          div: 'A',
+          email: result.email,
+          isProfileComplete: false
         }
       });
     } catch (err: any) {
@@ -64,7 +69,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         studentInfo: {
           name: result.name,
           rollNo: result.rollNo,
-          email: result.email
+          grNo: '',
+          branch: 'Information Technology',
+          year: 'TE',
+          div: 'A',
+          email: result.email,
+          isProfileComplete: false
         }
       });
     } catch (err: any) {

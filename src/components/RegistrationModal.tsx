@@ -1,30 +1,50 @@
-import React, { useState } from 'react';
-import { X, User, Mail, Phone, BookOpen, CheckCircle, Ticket } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Mail, Phone, CheckCircle, Ticket, Award, Layers, Hash } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { ClubEvent, EventRegistration } from '../types';
+import type { ClubEvent, EventRegistration, StudentProfile } from '../types';
 import { StorageService } from '../services/storageService';
 
 
 interface RegistrationModalProps {
   event: ClubEvent | null;
+  studentProfile?: StudentProfile;
   onClose: () => void;
   onSuccess: (registration: EventRegistration) => void;
 }
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   event,
+  studentProfile,
   onClose,
   onSuccess
 }) => {
   const [formData, setFormData] = useState({
-    studentName: '',
-    rollNo: '',
-    email: '',
-    phone: '',
-    department: 'Information Technology',
-    year: '3rd Year',
+    studentName: studentProfile?.name || '',
+    rollNo: studentProfile?.rollNo || '',
+    grNo: studentProfile?.grNo || '',
+    email: studentProfile?.email || '',
+    phone: studentProfile?.phone || '',
+    department: studentProfile?.branch || 'Information Technology',
+    year: studentProfile?.year || 'TE',
+    div: studentProfile?.div || 'A',
     specialRequests: ''
   });
+
+  useEffect(() => {
+    if (studentProfile) {
+      setFormData(prev => ({
+        ...prev,
+        studentName: studentProfile.name || prev.studentName,
+        rollNo: studentProfile.rollNo || prev.rollNo,
+        grNo: studentProfile.grNo || prev.grNo,
+        email: studentProfile.email || prev.email,
+        phone: studentProfile.phone || prev.phone,
+        department: studentProfile.branch || prev.department,
+        year: studentProfile.year || prev.year,
+        div: studentProfile.div || prev.div
+      }));
+    }
+  }, [studentProfile, event]);
 
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,8 +53,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.studentName.trim() || !formData.rollNo.trim() || !formData.email.trim() || !formData.phone.trim()) {
-      setError('Please fill out all required student details.');
+    if (!formData.studentName.trim() || !formData.rollNo.trim() || !formData.email.trim() || !formData.grNo.trim()) {
+      setError('Please fill out all required student details (Name, Roll No, GR No, Email).');
       return;
     }
 
@@ -52,10 +72,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         eventTitle: event.title,
         studentName: formData.studentName.trim(),
         rollNo: formData.rollNo.trim().toUpperCase(),
+        grNo: formData.grNo.trim().toUpperCase(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         department: formData.department,
         year: formData.year,
+        div: formData.div.trim().toUpperCase(),
         specialRequests: formData.specialRequests.trim()
       });
 
@@ -121,9 +143,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
             {/* Student Roll No */}
             <div className="form-group">
-              <label className="form-label">Roll No / Student ID *</label>
+              <label className="form-label">Roll No *</label>
               <div style={{ position: 'relative' }}>
-                <BookOpen size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <Hash size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input 
                   type="text"
                   required
@@ -132,6 +154,42 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   style={{ paddingLeft: '2.4rem' }}
                   value={formData.rollNo}
                   onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* Student GR No */}
+            <div className="form-group">
+              <label className="form-label">GR No *</label>
+              <div style={{ position: 'relative' }}>
+                <Award size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. GR10293"
+                  className="form-input"
+                  style={{ paddingLeft: '2.4rem' }}
+                  value={formData.grNo}
+                  onChange={(e) => setFormData({ ...formData, grNo: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Division */}
+            <div className="form-group">
+              <label className="form-label">Division (Div) *</label>
+              <div style={{ position: 'relative' }}>
+                <Layers size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. A"
+                  className="form-input"
+                  style={{ paddingLeft: '2.4rem' }}
+                  value={formData.div}
+                  onChange={(e) => setFormData({ ...formData, div: e.target.value })}
                 />
               </div>
             </div>
@@ -157,12 +215,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
             {/* Mobile Phone */}
             <div className="form-group">
-              <label className="form-label">WhatsApp / Phone *</label>
+              <label className="form-label">WhatsApp / Phone (Optional)</label>
               <div style={{ position: 'relative' }}>
                 <Phone size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input 
                   type="tel"
-                  required
                   placeholder="+91 98765 43210"
                   className="form-input"
                   style={{ paddingLeft: '2.4rem' }}
@@ -176,18 +233,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             {/* Department */}
             <div className="form-group">
-              <label className="form-label">Department</label>
+              <label className="form-label">Branch / Department</label>
               <select 
                 className="form-select"
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
               >
                 <option value="Information Technology">Information Technology</option>
-                <option value="Computer Science & Engineering">Computer Science & Engg</option>
+                <option value="Computer Engineering">Computer Engineering</option>
                 <option value="Artificial Intelligence & Data Science">AI & Data Science</option>
-                <option value="Cyber Security">Cyber Security</option>
-                <option value="Electronics & Communication">Electronics & Comm</option>
-                <option value="Other Department">Other Department</option>
+                <option value="Electronics & Telecommunication">Electronics & Telecommunication</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Chemical Engineering">Chemical Engineering</option>
               </select>
             </div>
 
@@ -199,11 +257,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 value={formData.year}
                 onChange={(e) => setFormData({ ...formData, year: e.target.value })}
               >
-                <option value="1st Year">1st Year</option>
-                <option value="2nd Year">2nd Year</option>
-                <option value="3rd Year">3rd Year</option>
-                <option value="4th Year">4th Year</option>
-                <option value="Postgraduate">Postgraduate</option>
+                <option value="FE">FE (1st Year)</option>
+                <option value="SE">SE (2nd Year)</option>
+                <option value="TE">TE (3rd Year)</option>
+                <option value="BE">BE (4th Year)</option>
               </select>
             </div>
           </div>

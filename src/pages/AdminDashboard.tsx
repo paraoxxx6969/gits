@@ -218,16 +218,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Registrations Export CSV & Actions
   // ----------------------------------------------------
   const handleExportCSV = () => {
-    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'Roll No', 'Email', 'Phone', 'Dept', 'Year', 'Status', 'Registered At'];
+    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Registered At'];
     const rows = registrations.map(r => [
       r.ticketCode,
       `"${r.eventTitle}"`,
       `"${r.studentName}"`,
       r.rollNo,
+      r.grNo || 'N/A',
       r.email,
-      r.phone,
+      r.phone || 'N/A',
       `"${r.department}"`,
       r.year,
+      r.div || 'N/A',
       r.status,
       r.registeredAt
     ]);
@@ -355,6 +357,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const filteredRegistrations = registrations.filter(r => {
     const matchesSearch = r.studentName.toLowerCase().includes(regSearch.toLowerCase()) || 
                           r.rollNo.toLowerCase().includes(regSearch.toLowerCase()) ||
+                          (r.grNo && r.grNo.toLowerCase().includes(regSearch.toLowerCase())) ||
                           r.email.toLowerCase().includes(regSearch.toLowerCase());
     const matchesEvent = regEventFilter === 'All' || r.eventId === regEventFilter;
     return matchesSearch && matchesEvent;
@@ -563,9 +566,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
                     <th style={{ padding: '1rem' }}>Ticket Code</th>
-                    <th style={{ padding: '1rem' }}>Student Details</th>
+                    <th style={{ padding: '1rem' }}>Student Name & Email</th>
+                    <th style={{ padding: '1rem' }}>Roll & GR No</th>
+                    <th style={{ padding: '1rem' }}>Branch, Year & Div</th>
                     <th style={{ padding: '1rem' }}>Event Title</th>
-                    <th style={{ padding: '1rem' }}>Dept & Year</th>
                     <th style={{ padding: '1rem' }}>Status</th>
                     <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -581,18 +585,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <td style={{ padding: '1rem' }}>
                           <div style={{ fontWeight: 600, color: '#fff' }}>{reg.studentName}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            Roll: <span style={{ color: '#fff' }}>{reg.rollNo}</span> • {reg.email}
+                            {reg.email} {reg.phone ? `• ${reg.phone}` : ''}
                           </div>
                         </td>
 
-                        <td style={{ padding: '1rem', color: 'var(--text-main)', maxWidth: '240px' }}>
-                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {reg.eventTitle}
-                          </div>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontSize: '0.825rem', color: '#fff' }}>Roll: <strong style={{ color: '#00f2fe', fontFamily: 'var(--font-code)' }}>{reg.rollNo}</strong></div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GR: <strong style={{ color: '#a855f7', fontFamily: 'var(--font-code)' }}>{reg.grNo || 'N/A'}</strong></div>
                         </td>
 
                         <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                          {reg.department} ({reg.year})
+                          <div style={{ color: '#fff', fontWeight: 500 }}>{reg.department}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#00f2fe' }}>
+                            {reg.year} {reg.div ? `• DIV ${reg.div}` : ''}
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '1rem', color: 'var(--text-main)', maxWidth: '200px' }}>
+                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {reg.eventTitle}
+                          </div>
                         </td>
 
                         <td style={{ padding: '1rem' }}>

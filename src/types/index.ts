@@ -44,16 +44,30 @@ export interface ClubEvent {
   createdAt: string;
 }
 
+export interface StudentProfile {
+  name: string;
+  rollNo: string;
+  grNo: string;
+  branch: string;
+  year: 'FE' | 'SE' | 'TE' | 'BE' | string;
+  div: string;
+  email: string;
+  phone?: string;
+  isProfileComplete?: boolean;
+}
+
 export interface EventRegistration {
   id: string;
   eventId: string;
   eventTitle: string;
   studentName: string;
   rollNo: string;
+  grNo?: string;
   email: string;
   phone: string;
   department: string;
   year: string;
+  div?: string;
   status: 'Confirmed' | 'Attended' | 'Cancelled';
   ticketCode: string;
   registeredAt: string;
@@ -96,10 +110,6 @@ export interface Announcement {
 
 export interface UserSession {
   role: 'guest' | 'student' | 'admin';
-  studentInfo?: {
-    name: string;
-    rollNo: string;
-    email: string;
-  };
+  studentInfo?: StudentProfile;
   adminEmail?: string;
 }

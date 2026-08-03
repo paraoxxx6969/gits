@@ -1,20 +1,22 @@
 import React from 'react';
-import type { EventRegistration, ClubEvent } from '../types';
-import { Ticket, Calendar, MapPin, QrCode } from 'lucide-react';
+import type { EventRegistration, ClubEvent, StudentProfile } from '../types';
+import { Ticket, Calendar, MapPin, QrCode, Edit3, Award, BookOpen, Layers, Hash } from 'lucide-react';
 
 
 interface StudentDashboardProps {
-  studentInfo: { name: string; rollNo: string; email: string };
+  studentInfo: StudentProfile;
   registrations: EventRegistration[];
   events: ClubEvent[];
   onViewTicket: (reg: EventRegistration) => void;
+  onEditProfile?: () => void;
 }
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   studentInfo,
   registrations,
   events,
-  onViewTicket
+  onViewTicket,
+  onEditProfile
 }) => {
   // Filter student's own registrations
   const studentRegs = registrations.filter(
@@ -27,22 +29,49 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         
         {/* Student Profile Header */}
         <div className="glass-card" style={{ padding: '1.75rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(121, 40, 202, 0.12) 100%)', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #00f2fe 0%, #7928ca 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#080c14', fontWeight: 800, fontSize: '1.5rem' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #00f2fe 0%, #7928ca 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#080c14', fontWeight: 800, fontSize: '1.5rem', flexShrink: 0 }}>
             {studentInfo.name.charAt(0)}
           </div>
 
           <div style={{ flex: 1 }}>
-            <span className="badge badge-cyan" style={{ marginBottom: '0.25rem' }}>STUDENT PORTAL PROFILE</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+              <span className="badge badge-cyan">STUDENT PORTAL PROFILE</span>
+              {studentInfo.year && <span className="badge badge-purple">{studentInfo.year} YEAR</span>}
+              {studentInfo.div && <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>DIV {studentInfo.div}</span>}
+            </div>
+
             <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', margin: 0 }}>{studentInfo.name}</h1>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
-              <span>Roll No: <strong style={{ color: '#00f2fe', fontFamily: 'var(--font-code)' }}>{studentInfo.rollNo}</strong></span>
-              <span>Email: <strong style={{ color: '#fff' }}>{studentInfo.email}</strong></span>
+            
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem', marginTop: '0.65rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Hash size={14} color="#00f2fe" /> Roll No: <strong style={{ color: '#00f2fe', fontFamily: 'var(--font-code)' }}>{studentInfo.rollNo || 'N/A'}</strong>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Award size={14} color="#00f2fe" /> GR No: <strong style={{ color: '#00f2fe', fontFamily: 'var(--font-code)' }}>{studentInfo.grNo || 'N/A'}</strong>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <BookOpen size={14} color="#00f2fe" /> Branch: <strong style={{ color: '#fff' }}>{studentInfo.branch || 'Information Technology'}</strong>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Layers size={14} color="#00f2fe" /> Email: <strong style={{ color: '#fff' }}>{studentInfo.email}</strong>
+              </span>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00f2fe' }}>{studentRegs.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Registered Passes</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end' }}>
+            {onEditProfile && (
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={onEditProfile}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <Edit3 size={14} /> Edit Profile
+              </button>
+            )}
+            <div className="glass-card" style={{ padding: '0.5rem 1rem', textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#00f2fe' }}>{studentRegs.length}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Registered Passes</div>
+            </div>
           </div>
         </div>
 

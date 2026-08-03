@@ -41,7 +41,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       studentInfo: {
         name: studentName.trim(),
         rollNo: studentRollNo.trim().toUpperCase(),
-        email: studentEmail.trim()
+        grNo: '',
+        branch: 'Information Technology',
+        year: 'TE',
+        div: 'A',
+        email: studentEmail.trim(),
+        isProfileComplete: false
       }
     });
     onClose();

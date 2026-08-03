@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Preloader from './components/ui/preloader';
 import { StorageService } from './services/storageService';
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession } from './types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, StudentProfile } from './types';
 
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -16,6 +16,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { EventDetailsModal } from './components/EventDetailsModal';
 import { RegistrationModal } from './components/RegistrationModal';
 import { DigitalPassModal } from './components/DigitalPassModal';
+import { StudentProfileModal } from './components/StudentProfileModal';
 import { LoginPage } from './pages/LoginPage';
 
 import { subscribeToEvents, subscribeToMemories } from './services/firebase';
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
   const [generatedPass, setGeneratedPass] = useState<{ registration: EventRegistration; event: ClubEvent } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [showPreloader, setShowPreloader] = useState<boolean>(true);
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
 
   const handlePreloaderComplete = useCallback(() => {
     setShowPreloader(false);
@@ -87,6 +89,16 @@ export const App: React.FC = () => {
     setActiveTab('home');
   };
 
+  const handleSaveProfile = (updatedProfile: StudentProfile) => {
+    const updatedSession: UserSession = {
+      ...userSession,
+      studentInfo: updatedProfile
+    };
+    setUserSession(updatedSession);
+    StorageService.saveUserSession(updatedSession);
+    setIsEditingProfile(false);
+  };
+
   const handleRegistrationSuccess = (reg: EventRegistration) => {
     const targetEvent = events.find(e => e.id === reg.eventId) || registeringEvent;
     setRegisteringEvent(null);
@@ -102,6 +114,16 @@ export const App: React.FC = () => {
       setGeneratedPass({ registration: reg, event: targetEvent });
     }
   };
+
+  const isProfileIncomplete = Boolean(
+    isAuthenticated &&
+    userSession.role === 'student' &&
+    (!userSession.studentInfo?.isProfileComplete ||
+     !userSession.studentInfo?.grNo ||
+     !userSession.studentInfo?.div ||
+     !userSession.studentInfo?.branch ||
+     !userSession.studentInfo?.year)
+  );
 
   if (!isAuthenticated && userSession.role === 'guest') {
     return (
@@ -167,6 +189,7 @@ export const App: React.FC = () => {
             registrations={registrations}
             events={events}
             onViewTicket={handleViewTicketFromStudentDashboard}
+            onEditProfile={() => setIsEditingProfile(true)}
           />
         )}
 
@@ -189,6 +212,17 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Profile Onboarding / Edit Modal */}
+      {(isProfileIncomplete || isEditingProfile) && (
+        <StudentProfileModal 
+          isOpen={isProfileIncomplete || isEditingProfile}
+          isForced={isProfileIncomplete}
+          initialProfile={userSession.studentInfo}
+          onSaveProfile={handleSaveProfile}
+          onClose={() => setIsEditingProfile(false)}
+        />
+      )}
+
       {/* Modals */}
       <EventDetailsModal 
         event={selectedEvent}
@@ -198,6 +232,7 @@ export const App: React.FC = () => {
 
       <RegistrationModal 
         event={registeringEvent}
+        studentProfile={userSession.studentInfo}
         onClose={() => setRegisteringEvent(null)}
         onSuccess={handleRegistrationSuccess}
       />
