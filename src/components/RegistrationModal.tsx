@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, CheckCircle, Ticket, Award, Layers, Hash } from 'lucide-react';
+import { X, User, Mail, Phone, CheckCircle, Ticket, Award, Layers, Hash, Building } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { ClubEvent, EventRegistration, StudentProfile } from '../types';
 import { StorageService } from '../services/storageService';
@@ -27,6 +27,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     department: studentProfile?.branch || 'Information Technology',
     year: studentProfile?.year || 'TE',
     div: studentProfile?.div || 'A',
+    collegeName: event?.eventScope === 'Inter-College' ? '' : 'Datta Meghe College of Engineering (DMCE)',
     specialRequests: ''
   });
 
@@ -41,7 +42,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         phone: studentProfile.phone || prev.phone,
         department: studentProfile.branch || prev.department,
         year: studentProfile.year || prev.year,
-        div: studentProfile.div || prev.div
+        div: studentProfile.div || prev.div,
+        collegeName: event?.eventScope === 'Inter-College' ? prev.collegeName : 'Datta Meghe College of Engineering (DMCE)'
       }));
     }
   }, [studentProfile, event]);
@@ -51,10 +53,17 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   if (!event) return null;
 
+  const isInterCollege = event.eventScope === 'Inter-College';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.studentName.trim() || !formData.rollNo.trim() || !formData.email.trim() || !formData.grNo.trim()) {
       setError('Please fill out all required student details (Name, Roll No, GR No, Email).');
+      return;
+    }
+
+    if (isInterCollege && !formData.collegeName.trim()) {
+      setError('Please enter your College / Institution Name for this Inter-College event.');
       return;
     }
 
@@ -87,6 +96,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         department: formData.department,
         year: formData.year,
         div: formData.div.trim().toUpperCase(),
+        collegeName: isInterCollege ? formData.collegeName.trim() : 'Datta Meghe College of Engineering (DMCE)',
         specialRequests: formData.specialRequests.trim()
       });
 
@@ -129,6 +139,33 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           {error && (
             <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#f87171', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.875rem' }}>
               {error}
+            </div>
+          )}
+
+          {/* Scope Indicator Banner */}
+          <div style={{ marginBottom: '1.25rem', padding: '0.65rem 1rem', borderRadius: '8px', background: isInterCollege ? 'rgba(121, 40, 202, 0.12)' : 'rgba(0, 242, 254, 0.1)', border: `1px solid ${isInterCollege ? 'rgba(121, 40, 202, 0.3)' : 'rgba(0, 242, 254, 0.25)'}`, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Building size={16} color={isInterCollege ? '#a855f7' : '#00f2fe'} />
+            <span style={{ fontSize: '0.8rem', color: isInterCollege ? '#d8b4fe' : '#7dd3fc', fontWeight: 500 }}>
+              {isInterCollege ? '🌐 Inter-College Event — Open to students from all colleges & universities' : '🏫 Intra-College Event — Exclusive to Datta Meghe College of Engineering (DMCE)'}
+            </span>
+          </div>
+
+          {/* College Name Field for Inter-College Events */}
+          {isInterCollege && (
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label">College / Institution Name *</label>
+              <div style={{ position: 'relative' }}>
+                <Building size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. Datta Meghe College of Engineering / VJTI / Terna"
+                  className="form-input"
+                  style={{ paddingLeft: '2.4rem' }}
+                  value={formData.collegeName}
+                  onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
+                />
+              </div>
             </div>
           )}
 

@@ -41,6 +41,7 @@ export interface ClubEvent {
   speaker: Speaker;
   schedule: ScheduleItem[];
   organizer: string;
+  eventScope?: 'Intra-College' | 'Inter-College';
   createdAt: string;
 }
 
@@ -68,10 +69,19 @@ export interface EventRegistration {
   department: string;
   year: string;
   div?: string;
+  collegeName?: string;
   status: 'Confirmed' | 'Attended' | 'Cancelled';
   ticketCode: string;
   registeredAt: string;
   specialRequests?: string;
+}
+
+export interface CrewMember {
+  id: string;
+  name: string;
+  role: string;
+  img: string;
+  createdAt?: string;
 }
 
 export interface EventMemory {

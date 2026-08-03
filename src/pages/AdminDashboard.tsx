@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto, CrewMember } from '../types';
 import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, X, Globe, Upload, Image as ImageIcon, Users 
+  Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck 
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -12,6 +12,7 @@ interface AdminDashboardProps {
   registrations: EventRegistration[];
   memories: EventMemory[];
   announcements: Announcement[];
+  crewMembers: CrewMember[];
   onRefreshData: () => void;
 }
 
@@ -20,9 +21,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   registrations,
   memories,
   announcements,
+  crewMembers,
   onRefreshData
 }) => {
-  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations' | 'crew'>('events');
 
   // Gallery Photos State
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
@@ -61,10 +63,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     tags: 'Hackathon, WebDev',
     prerequisites: 'Basic programming knowledge',
     fee: 'Free',
+    eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
     speakerName: 'GITS Tech Lead',
     speakerRole: 'Software Architect',
     speakerOrg: 'GITS Advisory',
     speakerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+  });
+
+  // Crew Form state
+  const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
+  const [editingCrewId, setEditingCrewId] = useState<string | null>(null);
+  const [crewForm, setCrewForm] = useState({
+    name: '',
+    role: '',
+    img: ''
   });
 
   // Memory Form state
@@ -107,6 +119,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tags: 'Workshop, IT',
       prerequisites: 'Laptop with charger',
       fee: 'Free',
+      eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
       speakerName: 'Dr. Rajesh Sharma',
       speakerRole: 'Faculty Lead',
       speakerOrg: 'IT Dept',
@@ -131,6 +144,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tags: evt.tags.join(', '),
       prerequisites: evt.prerequisites.join(', '),
       fee: evt.fee,
+      eventScope: evt.eventScope || 'Intra-College',
       speakerName: evt.speaker?.name || '',
       speakerRole: evt.speaker?.role || '',
       speakerOrg: evt.speaker?.organization || '',
@@ -156,6 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tags: eventForm.tags.split(',').map(t => t.trim()).filter(Boolean),
       prerequisites: eventForm.prerequisites.split(',').map(p => p.trim()).filter(Boolean),
       fee: eventForm.fee as any,
+      eventScope: eventForm.eventScope,
       speaker: {
         name: eventForm.speakerName,
         role: eventForm.speakerRole,
@@ -224,11 +239,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Registered At'];
+    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'College / Institution', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Registered At'];
     const rows = targetRegistrations.map(r => [
       r.ticketCode,
       `"${r.eventTitle.replace(/"/g, '""')}"`,
       `"${r.studentName.replace(/"/g, '""')}"`,
+      `"${(r.collegeName || 'Datta Meghe College of Engineering (DMCE)').replace(/"/g, '""')}"`,
       r.rollNo,
       r.grNo || 'N/A',
       r.email,
@@ -414,6 +430,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reader.readAsDataURL(file);
   };
 
+  // ----------------------------------------------------
+  // Crew Management Handlers
+  // ----------------------------------------------------
+  const handleOpenAddCrewModal = () => {
+    setEditingCrewId(null);
+    setCrewForm({
+      name: '',
+      role: '',
+      img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+    });
+    setIsCrewModalOpen(true);
+  };
+
+  const handleEditCrewMember = (member: CrewMember) => {
+    setEditingCrewId(member.id);
+    setCrewForm({
+      name: member.name,
+      role: member.role,
+      img: member.img
+    });
+    setIsCrewModalOpen(true);
+  };
+
+  const handleSaveCrewMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crewForm.name.trim() || !crewForm.role.trim()) {
+      alert('Please fill out member name and role.');
+      return;
+    }
+
+    if (editingCrewId) {
+      StorageService.updateCrewMember(editingCrewId, {
+        name: crewForm.name.trim(),
+        role: crewForm.role.trim(),
+        img: crewForm.img.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+      });
+    } else {
+      StorageService.addCrewMember({
+        name: crewForm.name.trim(),
+        role: crewForm.role.trim(),
+        img: crewForm.img.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+      });
+    }
+
+    setIsCrewModalOpen(false);
+    onRefreshData();
+  };
+
+  const handleDeleteCrewMember = (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete crew member "${name}"?`)) {
+      StorageService.deleteCrewMember(id);
+      onRefreshData();
+    }
+  };
+
+  const handleCrewImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600;
+        const MAX_HEIGHT = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          setCrewForm(prev => ({
+            ...prev,
+            img: compressedDataUrl
+          }));
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   // Filtered registrations list
   const filteredRegistrations = registrations.filter(r => {
@@ -497,6 +614,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('registrations')}
           >
             <Users size={16} /> Student Registrations ({registrations.length})
+          </button>
+
+          <button 
+            className={`btn btn-sm ${activeTab === 'crew' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('crew')}
+          >
+            <UserCheck size={16} /> Manage Crew ({crewMembers.length})
           </button>
         </div>
 
@@ -907,7 +1031,146 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-      </div>
+        {/* ---------------------------------------------------- */}
+        {/* TAB 6: MANAGE CREW & LEADERSHIP */}
+        {/* ---------------------------------------------------- */}
+        {activeTab === 'crew' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '0.25rem' }}>Manage Crew Members & Leadership</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Edit crew member photos, names, and roles. All edits sync in real-time to all devices and visitors.
+                </p>
+              </div>
+
+              <button className="btn btn-primary btn-sm" onClick={handleOpenAddCrewModal}>
+                <Plus size={16} /> Add New Crew Member
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+              {crewMembers.map((member) => (
+                <div key={member.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+                  <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #00f2fe', marginBottom: '1rem', background: '#0a0f1d' }}>
+                    <img src={member.img} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+
+                  <h4 style={{ fontSize: '1.1rem', color: '#fff', margin: '0 0 0.35rem 0', fontWeight: 700 }}>{member.name}</h4>
+                  <div style={{ fontSize: '0.8rem', color: '#00f2fe', fontWeight: 600, marginBottom: '1rem' }}>{member.role}</div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', width: '100%', marginTop: 'auto' }}>
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                      onClick={() => handleEditCrewMember(member)}
+                    >
+                      <Edit3 size={14} /> Edit Photo & Info
+                    </button>
+
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleDeleteCrewMember(member.id, member.name)}
+                      title="Delete Member"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      {/* MODAL: EDIT / ADD CREW MEMBER */}
+      {isCrewModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsCrewModalOpen(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#fff', margin: 0 }}>
+                {editingCrewId ? 'Edit Crew Member Photo & Info' : 'Add New Crew Member'}
+              </h3>
+              <button onClick={() => setIsCrewModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCrewMember} style={{ padding: '1.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">Member Full Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="form-input" 
+                  placeholder="e.g. Aarav Mehta"
+                  value={crewForm.name}
+                  onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Role / Position *</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="form-input" 
+                  placeholder="e.g. President · Lead Coordinator"
+                  value={crewForm.role}
+                  onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Member Photo</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Upload size={16} /> Upload Photo File
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }}
+                        onChange={handleCrewImageUpload}
+                      />
+                    </label>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>or paste photo URL:</span>
+                  </div>
+
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    placeholder="https://images.unsplash.com/..."
+                    value={crewForm.img}
+                    onChange={(e) => setCrewForm({ ...crewForm, img: e.target.value })}
+                  />
+
+                  {crewForm.img && (
+                    <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #00f2fe', flexShrink: 0 }}>
+                        <img src={crewForm.img} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#00f2fe', fontWeight: 600 }}>
+                        Photo Preview
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsCrewModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">
+                  {editingCrewId ? 'Save Member Changes' : 'Add Crew Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* MODAL: CREATE / EDIT EVENT */}
       {isEventModalOpen && (
@@ -933,6 +1196,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Event Scope (Intra-College vs Inter-College) *</label>
+                <select 
+                  className="form-select"
+                  value={eventForm.eventScope}
+                  onChange={(e) => setEventForm({ ...eventForm, eventScope: e.target.value as 'Intra-College' | 'Inter-College' })}
+                >
+                  <option value="Intra-College">🏫 Intra-College (Datta Meghe / DMCE Students Only)</option>
+                  <option value="Inter-College">🌐 Inter-College (Open to All Colleges / Inter-School)</option>
+                </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -1248,6 +1523,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      </div>
     </div>
   );
 };

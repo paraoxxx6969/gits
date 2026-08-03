@@ -1,4 +1,4 @@
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto } from '../types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto, CrewMember } from '../types';
 import { 
   savePhotoToFirestore, 
   deletePhotoFromFirestore,
@@ -8,7 +8,9 @@ import {
   deleteMemoryFromFirestore,
   saveRegistrationToFirestore,
   saveAnnouncementToFirestore,
-  deleteAnnouncementFromFirestore
+  deleteAnnouncementFromFirestore,
+  saveCrewMemberToFirestore,
+  deleteCrewMemberFromFirestore
 } from './firebase';
 
 const STORAGE_KEYS = {
@@ -17,6 +19,7 @@ const STORAGE_KEYS = {
   MEMORIES: 'gits_club_memories_v2',
   ANNOUNCEMENTS: 'gits_club_announcements_v2',
   GALLERY: 'gits_club_gallery_v2',
+  CREW: 'gits_club_crew_members_v1',
   USER_SESSION: 'gits_club_user_session_v2',
 };
 
@@ -241,6 +244,65 @@ const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
     active: true,
     linkText: 'Register Now',
     linkUrl: '#events',
+    createdAt: new Date().toISOString()
+  }
+];
+
+const DEFAULT_CREW_MEMBERS: CrewMember[] = [
+  {
+    id: 'crew-01',
+    name: 'Dr. Rajesh Sharma',
+    role: 'Faculty Advisor',
+    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-02',
+    name: 'Aarav Mehta',
+    role: 'President · Lead Coordinator',
+    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-03',
+    name: 'Priya Sundaram',
+    role: 'Vice President · Web Lead',
+    img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-04',
+    name: 'Siddharth Patel',
+    role: 'CyberSec Wing Head',
+    img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-05',
+    name: 'Neha Kapoor',
+    role: 'AI & ML Wing Lead',
+    img: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-06',
+    name: 'Ravi Joshi',
+    role: 'Cloud & DevOps Coordinator',
+    img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-07',
+    name: 'Ananya Deshmukh',
+    role: 'Events & PR Lead',
+    img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=faces&q=80',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'crew-08',
+    name: 'Kavya Iyer',
+    role: 'Design & Media Head',
+    img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=faces&q=80',
     createdAt: new Date().toISOString()
   }
 ];
@@ -518,12 +580,59 @@ export const StorageService = {
     }
   },
 
+  // Crew Members CRUD
+  getCrewMembers(): CrewMember[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.CREW);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEYS.CREW, JSON.stringify(DEFAULT_CREW_MEMBERS));
+      return DEFAULT_CREW_MEMBERS;
+    }
+    try { return JSON.parse(raw); } catch { return DEFAULT_CREW_MEMBERS; }
+  },
+
+  saveCrewMembers(members: CrewMember[]) {
+    localStorage.setItem(STORAGE_KEYS.CREW, JSON.stringify(members));
+  },
+
+  addCrewMember(data: Omit<CrewMember, 'id'>): CrewMember {
+    const members = this.getCrewMembers();
+    const newMember: CrewMember = {
+      ...data,
+      id: 'crew-' + Date.now().toString().slice(-6),
+      createdAt: new Date().toISOString()
+    };
+    members.push(newMember);
+    this.saveCrewMembers(members);
+    saveCrewMemberToFirestore(newMember);
+    return newMember;
+  },
+
+  updateCrewMember(id: string, updatedFields: Partial<CrewMember>): CrewMember | null {
+    const members = this.getCrewMembers();
+    const index = members.findIndex(m => m.id === id);
+    if (index === -1) return null;
+    members[index] = { ...members[index], ...updatedFields };
+    this.saveCrewMembers(members);
+    saveCrewMemberToFirestore(members[index]);
+    return members[index];
+  },
+
+  deleteCrewMember(id: string): boolean {
+    const members = this.getCrewMembers();
+    const filtered = members.filter(m => m.id !== id);
+    if (filtered.length === members.length) return false;
+    this.saveCrewMembers(filtered);
+    deleteCrewMemberFromFirestore(id);
+    return true;
+  },
+
   resetAllData() {
     localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(DEFAULT_EVENTS));
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(DEFAULT_REGISTRATIONS));
     localStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(DEFAULT_MEMORIES));
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(DEFAULT_ANNOUNCEMENTS));
     localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(DEFAULT_GALLERY_PHOTOS));
+    localStorage.setItem(STORAGE_KEYS.CREW, JSON.stringify(DEFAULT_CREW_MEMBERS));
     localStorage.setItem(STORAGE_KEYS.USER_SESSION, JSON.stringify({ role: 'guest' }));
   }
 };

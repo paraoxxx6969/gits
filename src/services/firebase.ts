@@ -20,7 +20,7 @@ import {
   onSnapshot,
   type Firestore
 } from 'firebase/firestore';
-import type { GalleryPhoto, ClubEvent, EventMemory, Announcement } from '../types';
+import type { GalleryPhoto, ClubEvent, EventMemory, Announcement, CrewMember } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDTzVypF6Tv7e3PrDIkbqANKDjlg9gS0EI",
@@ -562,6 +562,74 @@ export function subscribeToAnnouncements(onUpdate: (announcements: Announcement[
       }, (err) => console.warn('Announcements Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing announcements listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}
+
+/**
+ * Cloud Firestore Real-time Sync for Crew / Team Members
+ */
+export async function saveCrewMemberToFirestore(member: CrewMember): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'crew_members', member.id);
+    const cleanData = JSON.parse(JSON.stringify(member));
+    await setDoc(ref, cleanData);
+    console.log("Synced crew member to Cloud Firestore:", member.id);
+  } catch (err: any) {
+    console.error('Failed to sync crew member to Cloud Firestore:', err);
+  }
+}
+
+export async function deleteCrewMemberFromFirestore(memberId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'crew_members', memberId);
+    await deleteDoc(ref);
+    console.log("Deleted crew member from Cloud Firestore:", memberId);
+  } catch (err) {
+    console.error('Failed to delete crew member from Firestore:', err);
+  }
+}
+
+export function subscribeToCrew(onUpdate: (members: CrewMember[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'crew_members');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const members: CrewMember[] = [];
+        snapshot.forEach((docSnap) => {
+          members.push(docSnap.data() as CrewMember);
+        });
+        if (members.length > 0) {
+          try { localStorage.setItem('gits_club_crew_members_v1', JSON.stringify(members)); } catch (e) { }
+          onUpdate(members);
+        }
+      }, (err) => console.warn('Crew Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing crew listener:', err);
     }
   };
 

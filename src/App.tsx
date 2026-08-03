@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Preloader from './components/ui/preloader';
 import { StorageService } from './services/storageService';
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, StudentProfile } from './types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, StudentProfile, CrewMember } from './types';
 
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -19,7 +19,7 @@ import { DigitalPassModal } from './components/DigitalPassModal';
 import { StudentProfileModal } from './components/StudentProfileModal';
 import { LoginPage } from './pages/LoginPage';
 
-import { subscribeToEvents, subscribeToMemories, subscribeToRegistrations, subscribeToAnnouncements } from './services/firebase';
+import { subscribeToEvents, subscribeToMemories, subscribeToRegistrations, subscribeToAnnouncements, subscribeToCrew } from './services/firebase';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -30,6 +30,7 @@ export const App: React.FC = () => {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [memories, setMemories] = useState<EventMemory[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
 
   // Active Modals state
   const [selectedEvent, setSelectedEvent] = useState<ClubEvent | null>(null);
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
     setRegistrations(StorageService.getRegistrations());
     setMemories(StorageService.getMemories());
     setAnnouncements(StorageService.getAnnouncements());
+    setCrewMembers(StorageService.getCrewMembers());
   };
 
   useEffect(() => {
@@ -73,11 +75,16 @@ export const App: React.FC = () => {
       if (cloudAncs.length > 0) setAnnouncements(cloudAncs);
     });
 
+    const unsubCrew = subscribeToCrew((cloudCrew) => {
+      if (cloudCrew.length > 0) setCrewMembers(cloudCrew);
+    });
+
     return () => {
       unsubEvents();
       unsubMemories();
       unsubRegistrations();
       unsubAnnouncements();
+      unsubCrew();
     };
   }, []);
 
@@ -190,7 +197,7 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'members' && (
-          <MembersPage />
+          <MembersPage crewMembers={crewMembers} />
         )}
 
         {activeTab === 'student-dashboard' && userSession.role === 'student' && userSession.studentInfo && (
@@ -209,6 +216,7 @@ export const App: React.FC = () => {
             registrations={registrations}
             memories={memories}
             announcements={announcements}
+            crewMembers={crewMembers}
             onRefreshData={refreshData}
           />
         )}

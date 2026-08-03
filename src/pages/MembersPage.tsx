@@ -1,58 +1,34 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import type { CrewMember } from '../types';
 import './MembersPage.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Member data — GITS Club members
-const MEMBERS = [
-  {
-    name: 'Dr. Rajesh Sharma',
-    role: 'Faculty Advisor',
-    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Aarav Mehta',
-    role: 'President · Lead Coordinator',
-    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Priya Sundaram',
-    role: 'Vice President · Web Lead',
-    img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Siddharth Patel',
-    role: 'CyberSec Wing Head',
-    img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Neha Kapoor',
-    role: 'AI & ML Wing Lead',
-    img: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Ravi Joshi',
-    role: 'Cloud & DevOps Coordinator',
-    img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Ananya Deshmukh',
-    role: 'Events & PR Lead',
-    img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
-  {
-    name: 'Kavya Iyer',
-    role: 'Design & Media Head',
-    img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=faces&q=80',
-  },
+// Fallback member data (used only if no crew members are loaded)
+const FALLBACK_MEMBERS = [
+  { id: 'fb-1', name: 'Dr. Rajesh Sharma', role: 'Faculty Advisor', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-2', name: 'Aarav Mehta', role: 'President · Lead Coordinator', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-3', name: 'Priya Sundaram', role: 'Vice President · Web Lead', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-4', name: 'Siddharth Patel', role: 'CyberSec Wing Head', img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-5', name: 'Neha Kapoor', role: 'AI & ML Wing Lead', img: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-6', name: 'Ravi Joshi', role: 'Cloud & DevOps Coordinator', img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-7', name: 'Ananya Deshmukh', role: 'Events & PR Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=faces&q=80' },
+  { id: 'fb-8', name: 'Kavya Iyer', role: 'Design & Media Head', img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=faces&q=80' },
 ];
 
-const CARD_ROTS  = [-9, -5, -2, 3, 0, 4, 7, -4];
-const CARD_DEPTHS = [14, 10, 8, 12, 6, 11, 9, 13];
+const CARD_ROTS_BASE  = [-9, -5, -2, 3, 0, 4, 7, -4];
+const CARD_DEPTHS_BASE = [14, 10, 8, 12, 6, 11, 9, 13];
 
-export const MembersPage: React.FC = () => {
+interface MembersPageProps {
+  crewMembers?: CrewMember[];
+}
+
+export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
+  const MEMBERS = (crewMembers && crewMembers.length > 0) ? crewMembers : FALLBACK_MEMBERS;
+  const CARD_ROTS = MEMBERS.map((_, i) => CARD_ROTS_BASE[i % CARD_ROTS_BASE.length]);
+  const CARD_DEPTHS = MEMBERS.map((_, i) => CARD_DEPTHS_BASE[i % CARD_DEPTHS_BASE.length]);
   const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const bigTextRef = useRef<HTMLDivElement>(null);
@@ -391,7 +367,7 @@ export const MembersPage: React.FC = () => {
 
         <div className="m-team-grid" ref={teamGridRef}>
           {MEMBERS.map((member) => (
-            <div className="m-t-card" key={member.name}>
+            <div className="m-t-card" key={member.id || member.name}>
               <img src={member.img} alt={member.name} />
               <div className="m-t-meta">
                 <div className="m-nm">{member.name}</div>
