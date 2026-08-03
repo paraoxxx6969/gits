@@ -1,4 +1,4 @@
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto, CrewMember } from '../types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, UserSession, GalleryPhoto, CrewMember, EventFeedbackResponse } from '../types';
 import { 
   savePhotoToFirestore, 
   deletePhotoFromFirestore,
@@ -11,7 +11,9 @@ import {
   saveAnnouncementToFirestore,
   deleteAnnouncementFromFirestore,
   saveCrewMemberToFirestore,
-  deleteCrewMemberFromFirestore
+  deleteCrewMemberFromFirestore,
+  saveFeedbackToFirestore,
+  deleteFeedbackFromFirestore
 } from './firebase';
 
 const STORAGE_KEYS = {
@@ -22,6 +24,7 @@ const STORAGE_KEYS = {
   GALLERY: 'gits_club_gallery_v2',
   CREW: 'gits_club_crew_members_v1',
   USER_SESSION: 'gits_club_user_session_v2',
+  FEEDBACK: 'gits_club_feedback_v1'
 };
 
 const DEFAULT_GALLERY_PHOTOS: GalleryPhoto[] = [
@@ -670,6 +673,34 @@ export const StorageService = {
     if (filtered.length === members.length) return false;
     this.saveCrewMembers(filtered);
     deleteCrewMemberFromFirestore(id);
+    return true;
+  },
+
+  // Event Feedback CRUD
+  getFeedbackResponses(): EventFeedbackResponse[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.FEEDBACK);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return []; }
+  },
+
+  addFeedbackResponse(data: Omit<EventFeedbackResponse, 'id' | 'submittedAt'>): EventFeedbackResponse {
+    const feedbackList = this.getFeedbackResponses();
+    const newFeedback: EventFeedbackResponse = {
+      ...data,
+      id: 'fb-' + Date.now().toString().slice(-6),
+      submittedAt: new Date().toISOString()
+    };
+    feedbackList.unshift(newFeedback);
+    localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(feedbackList));
+    saveFeedbackToFirestore(newFeedback);
+    return newFeedback;
+  },
+
+  deleteFeedbackResponse(id: string): boolean {
+    const list = this.getFeedbackResponses();
+    const filtered = list.filter(f => f.id !== id);
+    localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(filtered));
+    deleteFeedbackFromFirestore(id);
     return true;
   },
 

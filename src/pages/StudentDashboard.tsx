@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { EventRegistration, ClubEvent, StudentProfile } from '../types';
-import { Ticket, Calendar, MapPin, QrCode, Edit3, Award, BookOpen, Layers, Hash, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Ticket, Calendar, MapPin, QrCode, Edit3, Award, BookOpen, Layers, Hash, XCircle, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
+import { EventFeedbackModal } from '../components/EventFeedbackModal';
 
 
 interface StudentDashboardProps {
@@ -20,6 +21,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onEditProfile,
   onCancelRegistration
 }) => {
+  const [feedbackEvent, setFeedbackEvent] = useState<ClubEvent | null>(null);
+
   // Filter student's active & pending registrations (exclude Cancelled or deleted registrations)
   const studentRegs = registrations.filter(
     r => r.status !== 'Cancelled' && (
@@ -169,13 +172,25 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       )}
 
                       {(reg.status === 'Confirmed' || reg.status === 'Attended') && (
-                        <button 
-                          className="btn btn-outline-cyan btn-sm"
-                          onClick={() => onViewTicket(reg)}
-                          style={{ width: '100%', gap: '0.5rem' }}
-                        >
-                          <QrCode size={16} /> View Digital Pass QR Ticket
-                        </button>
+                        <>
+                          <button 
+                            className="btn btn-outline-cyan btn-sm"
+                            onClick={() => onViewTicket(reg)}
+                            style={{ width: '100%', gap: '0.5rem' }}
+                          >
+                            <QrCode size={16} /> View Digital Pass QR Ticket
+                          </button>
+
+                          {event && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setFeedbackEvent(event)}
+                              style={{ width: '100%', gap: '0.4rem', color: '#00f2fe', borderColor: 'rgba(0, 242, 254, 0.3)' }}
+                            >
+                              <MessageSquare size={15} /> 💬 Give Event Feedback
+                            </button>
+                          )}
+                        </>
                       )}
 
                       {/* Cancel button — only shown for active registrations */}
@@ -222,6 +237,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           )}
         </div>
 
+        {/* Student Feedback Modal */}
+        {feedbackEvent && (
+          <EventFeedbackModal
+            event={feedbackEvent}
+            studentProfile={studentInfo}
+            onClose={() => setFeedbackEvent(null)}
+            onSuccess={() => setFeedbackEvent(null)}
+          />
+        )}
       </div>
     </div>
   );

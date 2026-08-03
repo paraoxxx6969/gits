@@ -41,11 +41,32 @@ export interface ClubEvent {
   isPaid?: boolean;
   paymentQrImage?: string;
   upiId?: string;
+  feedbackEnabled?: boolean;
+  feedbackQuestions?: FeedbackQuestion[];
   speaker: Speaker;
   schedule: ScheduleItem[];
   organizer: string;
   eventScope?: 'Intra-College' | 'Inter-College';
   createdAt: string;
+}
+
+export interface FeedbackQuestion {
+  id: string;
+  questionText: string;
+  type: 'rating' | 'text';
+}
+
+export interface EventFeedbackResponse {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  studentName: string;
+  studentEmail: string;
+  rollNo: string;
+  overallRating: number; // 1-5 stars
+  answers: { questionId: string; questionText: string; answer: string | number }[];
+  comments?: string;
+  submittedAt: string;
 }
 
 export interface StudentProfile {

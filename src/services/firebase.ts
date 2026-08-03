@@ -642,3 +642,70 @@ export function subscribeToCrew(onUpdate: (members: CrewMember[]) => void): () =
     if (unsubscribeSnapshot) unsubscribeSnapshot();
   };
 }
+
+/**
+ * Cloud Firestore Real-time Sync for Event Feedback Responses
+ */
+export async function saveFeedbackToFirestore(feedback: any): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_feedback', feedback.id);
+    const cleanData = JSON.parse(JSON.stringify(feedback));
+    await setDoc(ref, cleanData);
+    console.log("Synced feedback to Cloud Firestore:", feedback.id);
+  } catch (err: any) {
+    console.error('Failed to sync feedback to Cloud Firestore:', err);
+  }
+}
+
+export async function deleteFeedbackFromFirestore(feedbackId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_feedback', feedbackId);
+    await deleteDoc(ref);
+    console.log("Deleted feedback from Cloud Firestore:", feedbackId);
+  } catch (err) {
+    console.error('Failed to delete feedback from Firestore:', err);
+  }
+}
+
+export function subscribeToFeedback(onUpdate: (feedbackList: any[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'event_feedback');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const feedbackList: any[] = [];
+        snapshot.forEach((docSnap) => {
+          feedbackList.push(docSnap.data());
+        });
+        feedbackList.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+        try { localStorage.setItem('gits_club_feedback_v1', JSON.stringify(feedbackList)); } catch (e) { }
+        onUpdate(feedbackList);
+      }, (err) => console.warn('Feedback Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing feedback listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}

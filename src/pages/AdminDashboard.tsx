@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto, CrewMember } from '../types';
+import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto, CrewMember, EventFeedbackResponse, FeedbackQuestion } from '../types';
 import { StorageService } from '../services/storageService';
-import { subscribeToGalleryPhotos } from '../services/firebase';
+import { subscribeToGalleryPhotos, subscribeToFeedback } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck 
+  Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck, MessageSquare, Star
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -24,10 +24,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   crewMembers,
   onRefreshData
 }) => {
-  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations' | 'crew'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations' | 'crew' | 'feedback'>('events');
 
-  // Gallery Photos State
+  // Gallery Photos & Feedback State
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
+  const [feedbackList, setFeedbackList] = useState<EventFeedbackResponse[]>(() => StorageService.getFeedbackResponses());
+  const [feedbackEventFilter, setFeedbackEventFilter] = useState<string>('All');
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [galleryForm, setGalleryForm] = useState({
     title: '',
@@ -37,12 +39,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     year: '2026'
   });
 
-  // Subscribe to Cloud Firestore photos in Admin Panel
+  // Subscribe to Cloud Firestore photos & feedback in Admin Panel
   useEffect(() => {
-    const unsub = subscribeToGalleryPhotos((cloudPhotos) => {
+    const unsubGallery = subscribeToGalleryPhotos((cloudPhotos) => {
       setGalleryPhotos(cloudPhotos);
     });
-    return () => unsub();
+    const unsubFeedback = subscribeToFeedback((cloudFeedback) => {
+      setFeedbackList(cloudFeedback);
+    });
+    return () => { unsubGallery(); unsubFeedback(); };
   }, []);
 
   // Event modal state
@@ -70,7 +75,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     speakerName: 'GITS Tech Lead',
     speakerRole: 'Software Architect',
     speakerOrg: 'GITS Advisory',
-    speakerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+    speakerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    feedbackQuestions: [
+      { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+      { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+      { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+    ] as FeedbackQuestion[]
   });
 
   // Crew Form state
@@ -130,7 +140,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       speakerName: 'Dr. Rajesh Sharma',
       speakerRole: 'Faculty Lead',
       speakerOrg: 'IT Dept',
-      speakerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      speakerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      feedbackQuestions: [
+        { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+        { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+        { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+      ]
     });
     setIsEventModalOpen(true);
   };
@@ -158,7 +173,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       speakerName: evt.speaker?.name || '',
       speakerRole: evt.speaker?.role || '',
       speakerOrg: evt.speaker?.organization || '',
-      speakerAvatar: evt.speaker?.avatar || ''
+      speakerAvatar: evt.speaker?.avatar || '',
+      feedbackQuestions: evt.feedbackQuestions && evt.feedbackQuestions.length > 0 ? evt.feedbackQuestions : [
+        { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+        { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+        { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+      ]
     });
     setIsEventModalOpen(true);
   };
@@ -183,6 +203,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       isPaid: eventForm.isPaid,
       paymentQrImage: eventForm.isPaid ? eventForm.paymentQrImage : '',
       upiId: eventForm.isPaid ? eventForm.upiId : '',
+      feedbackEnabled: true,
+      feedbackQuestions: eventForm.feedbackQuestions,
       eventScope: eventForm.eventScope,
       speaker: {
         name: eventForm.speakerName,
@@ -286,6 +308,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportFeedbackCSV = () => {
+    const target = feedbackEventFilter === 'All'
+      ? feedbackList
+      : feedbackList.filter(f => f.eventId === feedbackEventFilter);
+    
+    if (target.length === 0) {
+      alert('No feedback responses to export.');
+      return;
+    }
+
+    const headers = ['Event Title', 'Student Name', 'Roll No', 'Email', 'Overall Rating', 'Responses / Answers', 'Submitted At'];
+    const rows = target.map(f => [
+      `"${f.eventTitle.replace(/"/g, '""')}"`,
+      `"${f.studentName.replace(/"/g, '""')}"`,
+      f.rollNo,
+      f.studentEmail,
+      `${f.overallRating || 5} Stars`,
+      `"${f.answers.map(a => `${a.questionText}: ${a.answer}`).join(' | ').replace(/"/g, '""')}"`,
+      f.submittedAt
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `GITS_Feedback_Export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -676,6 +729,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('registrations')}
           >
             <Users size={16} /> Student Registrations ({registrations.length})
+          </button>
+
+          <button 
+            className={`btn btn-sm ${activeTab === 'feedback' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('feedback')}
+          >
+            <MessageSquare size={16} /> Student Feedback ({feedbackList.length})
           </button>
 
           <button 
@@ -1183,6 +1243,148 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
+        {/* ---------------------------------------------------- */}
+        {/* TAB 7: STUDENT FEEDBACK & REVIEWS (ADMIN ONLY) */}
+        {/* ---------------------------------------------------- */}
+        {activeTab === 'feedback' && (
+          <div>
+            <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MessageSquare size={20} color="#00f2fe" /> Student Event Feedback Responses
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                  🔒 Confidential Student Reviews & Ratings. Only visible to GITS Coordinators.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select 
+                  className="form-select"
+                  style={{ width: 'auto', minWidth: '200px' }}
+                  value={feedbackEventFilter}
+                  onChange={(e) => setFeedbackEventFilter(e.target.value)}
+                >
+                  <option value="All">All Events Feedback</option>
+                  {events.map(e => (
+                    <option key={e.id} value={e.id}>{e.title}</option>
+                  ))}
+                </select>
+
+                <button className="btn btn-primary btn-sm" onClick={handleExportFeedbackCSV}>
+                  <Download size={16} /> Export Feedback CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
+              <div className="glass-card" style={{ padding: '1.25rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>TOTAL FEEDBACK SUBMISSIONS</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>
+                  {feedbackEventFilter === 'All' ? feedbackList.length : feedbackList.filter(f => f.eventId === feedbackEventFilter).length}
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: '1.25rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>AVERAGE OVERALL RATING</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  {(() => {
+                    const target = feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter);
+                    if (target.length === 0) return 'N/A';
+                    const avg = target.reduce((sum, f) => sum + (f.overallRating || 5), 0) / target.length;
+                    return `${avg.toFixed(1)} ★`;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback Responses Table */}
+            <div className="glass-card" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '1rem' }}>Event Title</th>
+                    <th style={{ padding: '1rem' }}>Student Details</th>
+                    <th style={{ padding: '1rem' }}>Overall Rating</th>
+                    <th style={{ padding: '1rem' }}>Custom Answers & Comments</th>
+                    <th style={{ padding: '1rem' }}>Submitted At</th>
+                    <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter)).length > 0 ? (
+                    (feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter)).map((fb) => (
+                      <tr key={fb.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '1rem', fontWeight: 600, color: '#00f2fe', maxWidth: '180px' }}>
+                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {fb.eventTitle}
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: 600, color: '#fff' }}>{fb.studentName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Roll: <strong style={{ color: '#00f2fe' }}>{fb.rollNo}</strong> • {fb.studentEmail}
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#fbbf24', fontWeight: 700 }}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} size={14} fill={s <= (fb.overallRating || 5) ? '#fbbf24' : 'transparent'} color={s <= (fb.overallRating || 5) ? '#fbbf24' : '#475569'} />
+                            ))}
+                            <span style={{ marginLeft: '0.35rem', fontSize: '0.8rem' }}>({fb.overallRating || 5}/5)</span>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.825rem', maxWidth: '320px' }}>
+                          {fb.answers.map((ans, aIdx) => (
+                            <div key={aIdx} style={{ marginBottom: '0.35rem' }}>
+                              <strong style={{ color: '#e2e8f0' }}>{ans.questionText}:</strong>{' '}
+                              <span style={{ color: '#00f2fe' }}>{ans.answer}</span>
+                            </div>
+                          ))}
+                          {fb.comments && (
+                            <div style={{ marginTop: '0.4rem', fontStyle: 'italic', color: '#94a3b8', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '0.35rem' }}>
+                              💬 "{fb.comments}"
+                            </div>
+                          )}
+                        </td>
+
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                          {new Date(fb.submittedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </td>
+
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <button 
+                            className="btn btn-danger btn-sm"
+                            onClick={() => {
+                              if (window.confirm('Delete this feedback entry?')) {
+                                StorageService.deleteFeedbackResponse(fb.id);
+                                setFeedbackList(StorageService.getFeedbackResponses());
+                              }
+                            }}
+                            title="Delete Feedback Entry"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No feedback submissions received yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       {/* MODAL: EDIT / ADD CREW MEMBER */}
       {isCrewModalOpen && (
         <div className="modal-overlay" onClick={() => setIsCrewModalOpen(false)}>
@@ -1403,6 +1605,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Per-Event Custom Feedback Form Builder */}
+              <div className="glass-card" style={{ padding: '1.15rem', marginBottom: '1.25rem', border: '1px solid rgba(0, 242, 254, 0.3)', background: 'rgba(0, 242, 254, 0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                  <div style={{ fontWeight: 700, color: '#00f2fe', fontSize: '0.925rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <MessageSquare size={16} /> Per-Event Custom Feedback Questions Builder
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+                    onClick={() => {
+                      setEventForm({
+                        ...eventForm,
+                        feedbackQuestions: [
+                          ...(eventForm.feedbackQuestions || []),
+                          { id: 'q-' + Date.now(), questionText: 'Custom Event Question', type: 'text' }
+                        ]
+                      });
+                    }}
+                  >
+                    + Add Question
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.4 }}>
+                  Customize the feedback questions students will answer for this specific event. Student responses will only be visible to Admins.
+                </p>
+
+                {(eventForm.feedbackQuestions || []).map((q, qIdx) => (
+                  <div key={q.id || qIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#00f2fe', fontWeight: 700, width: '24px' }}>Q{qIdx + 1}.</span>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ flex: 1, padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                      placeholder="Enter question text..."
+                      value={q.questionText}
+                      onChange={(e) => {
+                        const updated = [...(eventForm.feedbackQuestions || [])];
+                        updated[qIdx] = { ...updated[qIdx], questionText: e.target.value };
+                        setEventForm({ ...eventForm, feedbackQuestions: updated });
+                      }}
+                    />
+                    <select
+                      className="form-select"
+                      style={{ width: 'auto', padding: '0.35rem 0.5rem', fontSize: '0.8rem' }}
+                      value={q.type}
+                      onChange={(e) => {
+                        const updated = [...(eventForm.feedbackQuestions || [])];
+                        updated[qIdx] = { ...updated[qIdx], type: e.target.value as any };
+                        setEventForm({ ...eventForm, feedbackQuestions: updated });
+                      }}
+                    >
+                      <option value="rating">1-5 Rating ★</option>
+                      <option value="text">Text Response</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      style={{ padding: '0.35rem 0.5rem' }}
+                      onClick={() => {
+                        const updated = (eventForm.feedbackQuestions || []).filter((_, i) => i !== qIdx);
+                        setEventForm({ ...eventForm, feedbackQuestions: updated });
+                      }}
+                      title="Remove Question"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
