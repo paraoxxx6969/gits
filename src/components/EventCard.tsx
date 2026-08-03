@@ -1,6 +1,6 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Users, Tag, CheckCircle2 } from 'lucide-react';
-import type { ClubEvent } from '../types';
+import { Calendar, Clock, MapPin, Users, Tag, CheckCircle2, Hourglass } from 'lucide-react';
+import type { ClubEvent, EventRegistration } from '../types';
 
 
 interface EventCardProps {
@@ -8,16 +8,20 @@ interface EventCardProps {
   onSelectEvent: (event: ClubEvent) => void;
   onRegisterEvent: (event: ClubEvent) => void;
   isRegistered?: boolean;
+  userRegStatus?: EventRegistration['status'];
 }
 
 export const EventCard: React.FC<EventCardProps> = ({
   event,
   onSelectEvent,
   onRegisterEvent,
-  isRegistered = false
+  isRegistered = false,
+  userRegStatus
 }) => {
   const isFull = event.registeredCount >= event.capacity;
   const isLive = event.status === 'Live';
+  const isPending = isRegistered && userRegStatus === 'Pending';
+  const isConfirmed = isRegistered && userRegStatus !== 'Pending';
 
   // Category badge styling
   const getCategoryBadgeClass = (category: string) => {
@@ -46,31 +50,39 @@ export const EventCard: React.FC<EventCardProps> = ({
         height: '100%',
         overflow: 'hidden',
         position: 'relative',
-        // Highlight the card with a green glow when registered
-        ...(isRegistered && {
+        ...(isPending && {
+          border: '1px solid rgba(245, 158, 11, 0.5)',
+          boxShadow: '0 0 0 1px rgba(245, 158, 11, 0.15), 0 8px 32px rgba(245, 158, 11, 0.08)'
+        }),
+        ...(isConfirmed && {
           border: '1px solid rgba(16, 185, 129, 0.5)',
           boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.15), 0 8px 32px rgba(16, 185, 129, 0.08)'
         })
       }}
     >
-      {/* "You're Registered" ribbon — shown only if registered */}
-      {isRegistered && (
+      {/* Top Banner Ribbon for Registered Users */}
+      {isPending && (
         <div style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
+          top: 0, left: 0, right: 0, zIndex: 10,
+          background: 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)',
+          color: '#fff', padding: '0.45rem 1rem', fontSize: '0.78rem',
+          fontWeight: 700, letterSpacing: '0.03em', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+        }}>
+          <Hourglass size={14} />
+          ⏳ Registration Pending Payment Verification
+        </div>
+      )}
+
+      {isConfirmed && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, zIndex: 10,
           background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
-          color: '#fff',
-          padding: '0.45rem 1rem',
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          letterSpacing: '0.03em',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.4rem',
+          color: '#fff', padding: '0.45rem 1rem', fontSize: '0.78rem',
+          fontWeight: 700, letterSpacing: '0.03em', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
         }}>
           <CheckCircle2 size={14} />
           🎉 You're registered — Seat Confirmed!
@@ -90,9 +102,16 @@ export const EventCard: React.FC<EventCardProps> = ({
         
         {/* Top Badges */}
         <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className={`badge ${getCategoryBadgeClass(event.category)}`}>
-            <Tag size={10} /> {event.category}
-          </span>
+          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+            <span className={`badge ${getCategoryBadgeClass(event.category)}`}>
+              <Tag size={10} /> {event.category}
+            </span>
+            {(event.isPaid || (event.fee && event.fee !== 'Free')) && (
+              <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.25)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', fontWeight: 700 }}>
+                💳 {event.fee}
+              </span>
+            )}
+          </div>
           {getStatusBadge(event.status)}
         </div>
       </div>
@@ -139,7 +158,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div style={{ 
               width: `${seatPercent}%`, 
               height: '100%', 
-              background: isFull ? '#ef4444' : isRegistered ? 'linear-gradient(90deg, #059669 0%, #10b981 100%)' : 'linear-gradient(90deg, #00f2fe 0%, #4facfe 100%)',
+              background: isFull ? '#ef4444' : isPending ? 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)' : isConfirmed ? 'linear-gradient(90deg, #059669 0%, #10b981 100%)' : 'linear-gradient(90deg, #00f2fe 0%, #4facfe 100%)',
               transition: 'width 0.3s ease'
             }} />
           </div>
@@ -155,8 +174,27 @@ export const EventCard: React.FC<EventCardProps> = ({
             See Details
           </button>
           
-          {isRegistered ? (
-            /* Already registered — show confirmation state, disable re-registration */
+          {isPending ? (
+            <button
+              disabled
+              className="btn btn-sm"
+              style={{
+                flex: 1.2,
+                background: 'rgba(245, 158, 11, 0.2)',
+                border: '1px solid rgba(245, 158, 11, 0.5)',
+                color: '#fbbf24',
+                cursor: 'default',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                fontWeight: 700,
+                fontSize: '0.78rem'
+              }}
+            >
+              <Hourglass size={13} /> Pending Verification
+            </button>
+          ) : isConfirmed ? (
             <button
               disabled
               className="btn btn-sm"

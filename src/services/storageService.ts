@@ -365,11 +365,13 @@ export const StorageService = {
     try { return JSON.parse(raw); } catch { return DEFAULT_REGISTRATIONS; }
   },
 
-  addRegistration(data: Omit<EventRegistration, 'id' | 'ticketCode' | 'registeredAt' | 'status'>): EventRegistration {
+  addRegistration(data: Omit<EventRegistration, 'id' | 'ticketCode' | 'registeredAt' | 'status'> & { status?: EventRegistration['status'] }): EventRegistration {
     const registrations = this.getRegistrations();
     const events = this.getEvents();
     
     const targetEvent = events.find(e => e.id === data.eventId);
+    const isPaidEvent = targetEvent ? (targetEvent.isPaid || (targetEvent.fee && targetEvent.fee !== 'Free')) : false;
+
     if (targetEvent) {
       if ((targetEvent.registeredCount || 0) >= targetEvent.capacity) {
         throw new Error('Event is already full. Registration not allowed.');
@@ -384,7 +386,8 @@ export const StorageService = {
       ...data,
       id: 'reg-' + Date.now().toString().slice(-6),
       ticketCode,
-      status: 'Confirmed',
+      // Paid events require admin verification so default to 'Pending'; free events default to 'Confirmed'
+      status: data.status || (isPaidEvent ? 'Pending' : 'Confirmed'),
       registeredAt: new Date().toISOString()
     };
 
@@ -411,8 +414,8 @@ export const StorageService = {
     const events = this.getEvents();
     const evtIndex = events.findIndex(e => e.id === regs[index].eventId);
     if (evtIndex !== -1) {
-      const wasActive = prevStatus === 'Confirmed' || prevStatus === 'Attended' || prevStatus === 'Absent';
-      const isActive  = newStatus  === 'Confirmed' || newStatus  === 'Attended' || newStatus  === 'Absent';
+      const wasActive = prevStatus === 'Confirmed' || prevStatus === 'Attended' || prevStatus === 'Absent' || prevStatus === 'Pending';
+      const isActive  = newStatus  === 'Confirmed' || newStatus  === 'Attended' || newStatus  === 'Absent' || newStatus  === 'Pending';
       if (wasActive && !isActive) {
         // Cancelling → free a slot
         events[evtIndex].registeredCount = Math.max(0, (events[evtIndex].registeredCount || 0) - 1);

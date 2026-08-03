@@ -28,7 +28,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     year: studentProfile?.year || 'TE',
     div: studentProfile?.div || 'A',
     collegeName: event?.eventScope === 'Inter-College' ? '' : 'Datta Meghe College of Engineering (DMCE)',
-    specialRequests: ''
+    specialRequests: '',
+    paymentTransactionId: ''
   });
 
   useEffect(() => {
@@ -67,6 +68,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       return;
     }
 
+    const isPaidEvent = event.isPaid || (event.fee && event.fee !== 'Free');
+    if (isPaidEvent && !formData.paymentTransactionId.trim()) {
+      setError('Please scan the payment QR code and enter your UTR / Transaction Ref ID.');
+      return;
+    }
+
     if (!formData.email.includes('@')) {
       setError('Please enter a valid student email address.');
       return;
@@ -97,7 +104,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         year: formData.year,
         div: formData.div.trim().toUpperCase(),
         collegeName: isInterCollege ? formData.collegeName.trim() : 'Datta Meghe College of Engineering (DMCE)',
-        specialRequests: formData.specialRequests.trim()
+        specialRequests: formData.specialRequests.trim(),
+        paymentTransactionId: formData.paymentTransactionId.trim()
       });
 
       // Fire festive confetti!
@@ -322,6 +330,63 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
             />
           </div>
+
+          {/* Paid Event Payment QR Section */}
+          {(event.isPaid || (event.fee && event.fee !== 'Free')) && (
+            <div className="glass-card" style={{ padding: '1.25rem', marginTop: '1.25rem', marginBottom: '1.25rem', border: '1px solid rgba(245, 158, 11, 0.4)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(121, 40, 202, 0.08) 100%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: '0.9rem', color: '#fbbf24', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  💳 Paid Event — Registration Fee: <span style={{ color: '#fff', fontSize: '1.05rem' }}>{event.fee}</span>
+                </span>
+                <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                  Verification Required
+                </span>
+              </div>
+
+              {event.paymentQrImage ? (
+                <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem', background: '#ffffff', padding: '1rem', borderRadius: '12px' }}>
+                  <img 
+                    src={event.paymentQrImage} 
+                    alt="Payment QR Code" 
+                    style={{ width: '150px', height: '150px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e8f0' }} 
+                  />
+                  <div style={{ flex: 1, minWidth: '180px' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
+                      Scan QR Code with GPay / PhonePe / Paytm
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>
+                      1. Open GPay / PhonePe / Paytm<br />
+                      2. Scan this QR code and pay <strong>{event.fee}</strong><br />
+                      {event.upiId && <span>3. UPI ID: <strong>{event.upiId}</strong><br /></span>}
+                      4. Copy the UTR / Transaction Ref ID & paste below.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', color: '#fbbf24' }}>
+                  ℹ️ Payment Fee: <strong>{event.fee}</strong>. {event.upiId ? `Pay via UPI to: ${event.upiId}` : 'Please complete payment with event coordinator and enter transaction ID below.'}
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ color: '#fbbf24', fontWeight: 700 }}>
+                  Enter UTR / Transaction Ref ID *
+                </label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. 402910482910 or UPI Ref No."
+                  className="form-input"
+                  style={{ borderColor: 'rgba(245, 158, 11, 0.5)', background: 'rgba(15, 23, 42, 0.8)' }}
+                  value={formData.paymentTransactionId}
+                  onChange={(e) => setFormData({ ...formData, paymentTransactionId: e.target.value })}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'block' }}>
+                  ⏳ Your registration pass will be issued once the coordinator verifies this transaction ID.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Action Bar */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>

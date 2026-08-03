@@ -38,6 +38,9 @@ export interface ClubEvent {
   tags: string[];
   prerequisites: string[];
   fee: 'Free' | string;
+  isPaid?: boolean;
+  paymentQrImage?: string;
+  upiId?: string;
   speaker: Speaker;
   schedule: ScheduleItem[];
   organizer: string;
@@ -70,10 +73,12 @@ export interface EventRegistration {
   year: string;
   div?: string;
   collegeName?: string;
-  status: 'Confirmed' | 'Attended' | 'Cancelled' | 'Absent';
+  status: 'Confirmed' | 'Attended' | 'Cancelled' | 'Absent' | 'Pending';
   ticketCode: string;
   registeredAt: string;
   attendedAt?: string;
+  paymentTransactionId?: string;
+  paymentProofUrl?: string;
   specialRequests?: string;
 }
 

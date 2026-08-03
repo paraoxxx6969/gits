@@ -31,6 +31,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         return <span className="badge badge-green" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><CheckCircle2 size={12} /> Attended</span>;
       case 'Absent':
         return <span className="badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><AlertCircle size={12} /> Absent</span>;
+      case 'Pending':
+        return <span className="badge" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>⏳ PENDING APPROVAL</span>;
       case 'Cancelled':
         return <span className="badge" style={{ background: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><XCircle size={12} /> Cancelled</span>;
       default:
@@ -144,11 +146,26 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           <CheckCircle2 size={12} /> Attended on {new Date(reg.attendedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                         </div>
                       )}
+                      {reg.status === 'Pending' && (
+                        <div style={{ fontSize: '0.78rem', color: '#fbbf24', marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.25)', lineHeight: 1.45 }}>
+                          ⏳ <strong>Payment Under Review:</strong> {reg.paymentTransactionId ? `Txn Ref ${reg.paymentTransactionId}. ` : ''}Your digital ticket QR pass will be issued once verified by GITS coordinators.
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
                     <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {!isCancelled && (
+                      {reg.status === 'Pending' && (
+                        <button 
+                          disabled
+                          className="btn btn-secondary btn-sm"
+                          style={{ width: '100%', opacity: 0.6, cursor: 'not-allowed', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.3)' }}
+                        >
+                          ⏳ Ticket Pending Admin Verification
+                        </button>
+                      )}
+
+                      {(reg.status === 'Confirmed' || reg.status === 'Attended') && (
                         <button 
                           className="btn btn-outline-cyan btn-sm"
                           onClick={() => onViewTicket(reg)}

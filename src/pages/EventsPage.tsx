@@ -115,12 +115,13 @@ export const EventsPage: React.FC<EventsPageProps> = ({
         {filteredEvents.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
             {filteredEvents.map(evt => {
-              const isRegistered = registrations.some(r =>
+              const userReg = registrations.find(r =>
                 r.eventId === evt.id && (
                   (userEmail && r.email.toLowerCase() === userEmail.toLowerCase()) ||
                   (userRollNo && r.rollNo.toUpperCase() === userRollNo.toUpperCase())
                 )
               );
+              const isRegistered = Boolean(userReg && userReg.status !== 'Cancelled');
               return (
                 <EventCard 
                   key={evt.id}
@@ -128,6 +129,7 @@ export const EventsPage: React.FC<EventsPageProps> = ({
                   onSelectEvent={onSelectEvent}
                   onRegisterEvent={onRegisterEvent}
                   isRegistered={isRegistered}
+                  userRegStatus={userReg?.status}
                 />
               );
             })}

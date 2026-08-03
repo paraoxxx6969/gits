@@ -63,6 +63,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     tags: 'Hackathon, WebDev',
     prerequisites: 'Basic programming knowledge',
     fee: 'Free',
+    isPaid: false,
+    paymentQrImage: '',
+    upiId: '',
     eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
     speakerName: 'GITS Tech Lead',
     speakerRole: 'Software Architect',
@@ -119,6 +122,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tags: 'Workshop, IT',
       prerequisites: 'Laptop with charger',
       fee: 'Free',
+      isPaid: false,
+      paymentQrImage: '',
+      upiId: '',
       eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
       speakerName: 'Dr. Rajesh Sharma',
       speakerRole: 'Faculty Lead',
@@ -144,6 +150,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tags: evt.tags.join(', '),
       prerequisites: evt.prerequisites.join(', '),
       fee: evt.fee,
+      isPaid: evt.isPaid || (evt.fee !== 'Free'),
+      paymentQrImage: evt.paymentQrImage || '',
+      upiId: evt.upiId || '',
       eventScope: evt.eventScope || 'Intra-College',
       speakerName: evt.speaker?.name || '',
       speakerRole: evt.speaker?.role || '',
@@ -169,7 +178,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       image: eventForm.image || 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
       tags: eventForm.tags.split(',').map(t => t.trim()).filter(Boolean),
       prerequisites: eventForm.prerequisites.split(',').map(p => p.trim()).filter(Boolean),
-      fee: eventForm.fee as any,
+      fee: eventForm.isPaid ? (eventForm.fee === 'Free' ? '₹50' : eventForm.fee) : 'Free',
+      isPaid: eventForm.isPaid,
+      paymentQrImage: eventForm.isPaid ? eventForm.paymentQrImage : '',
+      upiId: eventForm.isPaid ? eventForm.upiId : '',
       eventScope: eventForm.eventScope,
       speaker: {
         name: eventForm.speakerName,
@@ -424,6 +436,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           setEventForm(prev => ({
             ...prev,
             image: compressedDataUrl
+          }));
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePaymentQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/png', 0.85);
+          setEventForm(prev => ({
+            ...prev,
+            paymentQrImage: compressedDataUrl
           }));
         }
       };
@@ -782,6 +840,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             {reg.email} {reg.phone ? `• ${reg.phone}` : ''}
                           </div>
+                          {reg.paymentTransactionId && (
+                            <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: '0.2rem', fontFamily: 'var(--font-code)' }}>
+                              💳 Txn Ref: {reg.paymentTransactionId}
+                            </div>
+                          )}
                         </td>
 
                         <td style={{ padding: '1rem' }}>
@@ -805,11 +868,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <td style={{ padding: '1rem' }}>
                           <select 
                             className="form-select"
-                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', width: 'auto' }}
+                            style={{
+                              padding: '0.2rem 0.5rem',
+                              fontSize: '0.75rem',
+                              width: 'auto',
+                              borderColor: reg.status === 'Pending' ? '#f59e0b' : undefined,
+                              color: reg.status === 'Pending' ? '#fbbf24' : undefined
+                            }}
                             value={reg.status}
                             onChange={(e) => handleUpdateRegStatus(reg.id, e.target.value as any)}
                           >
-                            <option value="Confirmed">Confirmed</option>
+                            <option value="Pending">⏳ Pending Approval</option>
+                            <option value="Confirmed">Confirmed (Ticket Issued)</option>
                             <option value="Attended">Attended ✓</option>
                             <option value="Absent">Absent ✗</option>
                             <option value="Cancelled">Cancelled</option>
@@ -817,13 +887,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
 
                         <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <button 
-                            className="btn btn-danger btn-sm"
-                            onClick={() => handleDeleteRegistration(reg.id)}
-                            title="Remove Registration"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                            {reg.status === 'Pending' && (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', background: '#059669', borderColor: '#10b981' }}
+                                onClick={() => handleUpdateRegStatus(reg.id, 'Confirmed')}
+                                title="Approve Payment & Issue Digital Pass Ticket"
+                              >
+                                ✓ Approve Ticket
+                              </button>
+                            )}
+                            <button 
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleDeleteRegistration(reg.id)}
+                              title="Remove Registration"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1201,17 +1283,110 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Event Scope (Intra-College vs Inter-College) *</label>
-                <select 
-                  className="form-select"
-                  value={eventForm.eventScope}
-                  onChange={(e) => setEventForm({ ...eventForm, eventScope: e.target.value as 'Intra-College' | 'Inter-College' })}
-                >
-                  <option value="Intra-College">🏫 Intra-College (Datta Meghe / DMCE Students Only)</option>
-                  <option value="Inter-College">🌐 Inter-College (Open to All Colleges / Inter-School)</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Event Pricing / Fee Type *</label>
+                  <select 
+                    className="form-select"
+                    value={eventForm.isPaid ? 'Paid' : 'Free'}
+                    onChange={(e) => {
+                      const isPaid = e.target.value === 'Paid';
+                      setEventForm({
+                        ...eventForm,
+                        isPaid,
+                        fee: isPaid ? (eventForm.fee === 'Free' ? '₹50' : eventForm.fee) : 'Free'
+                      });
+                    }}
+                  >
+                    <option value="Free">🆓 Free Event</option>
+                    <option value="Paid">💳 Paid Event (Requires Admin Payment Verification)</option>
+                  </select>
+                </div>
+
+                {eventForm.isPaid ? (
+                  <div className="form-group">
+                    <label className="form-label">Registration Fee Amount *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      className="form-input"
+                      placeholder="e.g. ₹50 or ₹100"
+                      value={eventForm.fee}
+                      onChange={(e) => setEventForm({ ...eventForm, fee: e.target.value })}
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Event Scope *</label>
+                    <select 
+                      className="form-select"
+                      value={eventForm.eventScope}
+                      onChange={(e) => setEventForm({ ...eventForm, eventScope: e.target.value as any })}
+                    >
+                      <option value="Intra-College">🏫 Intra-College (DMCE Only)</option>
+                      <option value="Inter-College">🌐 Inter-College (Open to All)</option>
+                    </select>
+                  </div>
+                )}
               </div>
+
+              {eventForm.isPaid && (
+                <div className="glass-card" style={{ padding: '1rem', marginBottom: '1.25rem', border: '1px solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.05)' }}>
+                  <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: '0.9rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    💳 Paid Event Payment Options (Google Pay / PhonePe / Paytm QR Code)
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">UPI ID for Direct Transfers (Optional)</label>
+                    <input 
+                      type="text" 
+                      className="form-input"
+                      placeholder="e.g. gits@upi or 9876543210@paytm"
+                      value={eventForm.upiId}
+                      onChange={(e) => setEventForm({ ...eventForm, upiId: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Upload Payment QR Code Image (PNG / JPG / GPay / PhonePe QR) *</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <label 
+                          className="btn btn-secondary btn-sm" 
+                          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+                        >
+                          <Upload size={16} /> Upload Payment QR Image (PNG/JPG)
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            style={{ display: 'none' }}
+                            onChange={handlePaymentQrUpload}
+                          />
+                        </label>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>or paste Image URL:</span>
+                      </div>
+
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        placeholder="https://.../gpay-qr-code.png"
+                        value={eventForm.paymentQrImage}
+                        onChange={(e) => setEventForm({ ...eventForm, paymentQrImage: e.target.value })}
+                      />
+
+                      {eventForm.paymentQrImage && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: '#fff', borderRadius: '10px', width: 'fit-content', border: '2px solid #fbbf24' }}>
+                          <img src={eventForm.paymentQrImage} alt="Payment QR Code Preview" style={{ width: '110px', height: '110px', objectFit: 'contain' }} />
+                          <div>
+                            <div style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 800 }}>UPI / GPay QR Preview</div>
+                            <div style={{ fontSize: '0.75rem', color: '#475569' }}>Students will scan this QR to pay {eventForm.fee}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
