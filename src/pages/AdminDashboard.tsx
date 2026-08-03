@@ -239,7 +239,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'College / Institution', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Registered At'];
+    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'College / Institution', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Attendance Status', 'Attended At', 'Registered At'];
     const rows = targetRegistrations.map(r => [
       r.ticketCode,
       `"${r.eventTitle.replace(/"/g, '""')}"`,
@@ -253,6 +253,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       r.year,
       r.div || 'N/A',
       r.status,
+      r.status === 'Attended' ? 'ATTENDED' : r.status === 'Absent' ? 'ABSENT' : r.status === 'Cancelled' ? 'CANCELLED' : 'NOT YET',
+      r.attendedAt ? new Date(r.attendedAt).toLocaleString('en-IN') : 'N/A',
       r.registeredAt
     ]);
 
@@ -808,7 +810,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             onChange={(e) => handleUpdateRegStatus(reg.id, e.target.value as any)}
                           >
                             <option value="Confirmed">Confirmed</option>
-                            <option value="Attended">Attended</option>
+                            <option value="Attended">Attended ✓</option>
+                            <option value="Absent">Absent ✗</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
                         </td>

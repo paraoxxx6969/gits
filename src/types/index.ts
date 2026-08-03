@@ -70,9 +70,10 @@ export interface EventRegistration {
   year: string;
   div?: string;
   collegeName?: string;
-  status: 'Confirmed' | 'Attended' | 'Cancelled';
+  status: 'Confirmed' | 'Attended' | 'Cancelled' | 'Absent';
   ticketCode: string;
   registeredAt: string;
+  attendedAt?: string;
   specialRequests?: string;
 }
 

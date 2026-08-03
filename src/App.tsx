@@ -315,6 +315,10 @@ export const App: React.FC = () => {
             events={events}
             onViewTicket={handleViewTicketFromStudentDashboard}
             onEditProfile={() => setIsEditingProfile(true)}
+            onCancelRegistration={(reg) => {
+              StorageService.updateRegistrationStatus(reg.id, 'Cancelled');
+              refreshData();
+            }}
           />
         )}
 

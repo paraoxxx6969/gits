@@ -394,19 +394,61 @@ export const StorageService = {
     return newReg;
   },
 
-  updateRegistrationStatus(id: string, status: EventRegistration['status']): boolean {
+  updateRegistrationStatus(id: string, newStatus: EventRegistration['status']): boolean {
     const regs = this.getRegistrations();
     const index = regs.findIndex(r => r.id === id);
     if (index === -1) return false;
-    regs[index].status = status;
+
+    const prevStatus = regs[index].status;
+    regs[index].status = newStatus;
+
+    // Set attendedAt timestamp when marking as Attended
+    if (newStatus === 'Attended') {
+      regs[index].attendedAt = new Date().toISOString();
+    }
+
+    // Adjust registeredCount on the event when cancelling or restoring
+    const events = this.getEvents();
+    const evtIndex = events.findIndex(e => e.id === regs[index].eventId);
+    if (evtIndex !== -1) {
+      const wasActive = prevStatus === 'Confirmed' || prevStatus === 'Attended' || prevStatus === 'Absent';
+      const isActive  = newStatus  === 'Confirmed' || newStatus  === 'Attended' || newStatus  === 'Absent';
+      if (wasActive && !isActive) {
+        // Cancelling → free a slot
+        events[evtIndex].registeredCount = Math.max(0, (events[evtIndex].registeredCount || 0) - 1);
+        this.saveEvents(events);
+        saveEventToFirestore(events[evtIndex]);
+      } else if (!wasActive && isActive) {
+        // Restoring from Cancelled → take a slot back
+        events[evtIndex].registeredCount = (events[evtIndex].registeredCount || 0) + 1;
+        this.saveEvents(events);
+        saveEventToFirestore(events[evtIndex]);
+      }
+    }
+
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(regs));
+    saveRegistrationToFirestore(regs[index]);
     return true;
   },
 
   deleteRegistration(id: string): boolean {
     const regs = this.getRegistrations();
+    const reg = regs.find(r => r.id === id);
+    if (!reg) return false;
+
+    // Free the slot on the event (if registration was active)
+    const wasActive = reg.status === 'Confirmed' || reg.status === 'Attended' || reg.status === 'Absent';
+    if (wasActive) {
+      const events = this.getEvents();
+      const evtIndex = events.findIndex(e => e.id === reg.eventId);
+      if (evtIndex !== -1) {
+        events[evtIndex].registeredCount = Math.max(0, (events[evtIndex].registeredCount || 0) - 1);
+        this.saveEvents(events);
+        saveEventToFirestore(events[evtIndex]);
+      }
+    }
+
     const filtered = regs.filter(r => r.id !== id);
-    if (filtered.length === regs.length) return false;
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(filtered));
     return true;
   },

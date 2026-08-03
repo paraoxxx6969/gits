@@ -1,6 +1,6 @@
 import React from 'react';
 import type { EventRegistration, ClubEvent, StudentProfile } from '../types';
-import { Ticket, Calendar, MapPin, QrCode, Edit3, Award, BookOpen, Layers, Hash } from 'lucide-react';
+import { Ticket, Calendar, MapPin, QrCode, Edit3, Award, BookOpen, Layers, Hash, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
 
 
 interface StudentDashboardProps {
@@ -9,6 +9,7 @@ interface StudentDashboardProps {
   events: ClubEvent[];
   onViewTicket: (reg: EventRegistration) => void;
   onEditProfile?: () => void;
+  onCancelRegistration?: (reg: EventRegistration) => void;
 }
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
@@ -16,12 +17,26 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   registrations,
   events,
   onViewTicket,
-  onEditProfile
+  onEditProfile,
+  onCancelRegistration
 }) => {
   // Filter student's own registrations
   const studentRegs = registrations.filter(
     r => r.rollNo.toUpperCase() === studentInfo.rollNo.toUpperCase() || r.email.toLowerCase() === studentInfo.email.toLowerCase()
   );
+
+  const getStatusBadge = (status: EventRegistration['status']) => {
+    switch (status) {
+      case 'Attended':
+        return <span className="badge badge-green" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><CheckCircle2 size={12} /> Attended</span>;
+      case 'Absent':
+        return <span className="badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><AlertCircle size={12} /> Absent</span>;
+      case 'Cancelled':
+        return <span className="badge" style={{ background: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><XCircle size={12} /> Cancelled</span>;
+      default:
+        return <span className="badge badge-green">CONFIRMED PASS</span>;
+    }
+  };
 
   return (
     <div style={{ padding: '2.5rem 0' }}>
@@ -85,15 +100,33 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
               {studentRegs.map(reg => {
                 const event = events.find(e => e.id === reg.eventId);
+                const isCancelled = reg.status === 'Cancelled';
                 return (
-                  <div key={reg.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div
+                    key={reg.id}
+                    className="glass-card"
+                    style={{
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      opacity: isCancelled ? 0.65 : 1,
+                      border: isCancelled
+                        ? '1px solid rgba(100,116,139,0.3)'
+                        : reg.status === 'Attended'
+                          ? '1px solid rgba(16,185,129,0.4)'
+                          : undefined
+                    }}
+                  >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <span className="badge badge-green">CONFIRMED PASS</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {getStatusBadge(reg.status)}
                         <span style={{ fontSize: '0.8rem', fontFamily: 'var(--font-code)', color: '#00f2fe' }}>{reg.ticketCode}</span>
                       </div>
 
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>{reg.eventTitle}</h3>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: isCancelled ? 'var(--text-muted)' : '#fff', marginBottom: '0.5rem' }}>
+                        {reg.eventTitle}
+                      </h3>
                       
                       {event && (
                         <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.35rem', margin: '0.85rem 0' }}>
@@ -105,15 +138,58 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           </div>
                         </div>
                       )}
+
+                      {reg.status === 'Attended' && reg.attendedAt && (
+                        <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <CheckCircle2 size={12} /> Attended on {new Date(reg.attendedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </div>
+                      )}
                     </div>
 
-                    <button 
-                      className="btn btn-outline-cyan btn-sm"
-                      onClick={() => onViewTicket(reg)}
-                      style={{ marginTop: '1rem', width: '100%', gap: '0.5rem' }}
-                    >
-                      <QrCode size={16} /> View Digital Pass QR Ticket
-                    </button>
+                    {/* Action Buttons */}
+                    <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {!isCancelled && (
+                        <button 
+                          className="btn btn-outline-cyan btn-sm"
+                          onClick={() => onViewTicket(reg)}
+                          style={{ width: '100%', gap: '0.5rem' }}
+                        >
+                          <QrCode size={16} /> View Digital Pass QR Ticket
+                        </button>
+                      )}
+
+                      {/* Cancel button — only shown for active registrations */}
+                      {(reg.status === 'Confirmed') && onCancelRegistration && (
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => {
+                            if (window.confirm(`Cancel your registration for "${reg.eventTitle}"? This will free up your slot.`)) {
+                              onCancelRegistration(reg);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#f87171',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            fontWeight: 600,
+                            fontSize: '0.82rem'
+                          }}
+                        >
+                          <XCircle size={14} /> Cancel Registration
+                        </button>
+                      )}
+
+                      {isCancelled && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem 0' }}>
+                          Registration cancelled
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
