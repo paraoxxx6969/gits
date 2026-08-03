@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto } from '../types';
 import { StorageService } from '../services/storageService';
-import { subscribeToGalleryPhotos, testFirestoreConnection } from '../services/firebase';
+import { subscribeToGalleryPhotos } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, RefreshCw, X, Globe, Upload, Image as ImageIcon 
@@ -382,14 +382,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => {
-              alert("Starting Firestore test... Please wait 2 seconds after clicking OK.");
-              testFirestoreConnection()
-                .then((result) => alert(result))
-                .catch((err) => alert("Test Error: " + err));
-            }} title="Test Firestore Write/Read">
-              🔬 Test Firestore
-            </button>
 
             <button className="btn btn-secondary btn-sm" onClick={handleResetDemoData} title="Reset to default sample data">
               <RefreshCw size={14} /> Reset Demo Data
