@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   if (userSession.role === 'student') {
-    navLinks.push({ id: 'student-dashboard', label: 'My Passes' });
+    navLinks.push({ id: 'student-dashboard', label: 'Profile' });
   }
   if (userSession.role === 'admin') {
     navLinks.push({ id: 'admin', label: 'Admin Portal' });

@@ -70,7 +70,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal }
 
           {/* Col 3: Contact Info */}
           <div>
-            <h4 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Club Headquarters</h4>
+            <h4 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Club of DMCE</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                 <MapPin size={18} color="#00f2fe" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -83,20 +83,8 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onOpenLoginModal }
             </div>
           </div>
 
-          {/* Col 4: Member & Admin Access */}
-          <div>
-            <h4 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Portal Access</h4>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Log in as a student to access event badges, or authenticate as an admin coordinator.
-            </p>
-            <button 
-              onClick={onOpenLoginModal}
-              className="btn btn-outline-cyan btn-sm"
-              style={{ width: '100%' }}
-            >
-              <LogIn size={14} /> GITS Portal Login
-            </button>
-          </div>
+
+
 
         </div>
 

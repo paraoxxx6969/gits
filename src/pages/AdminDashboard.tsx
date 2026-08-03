@@ -22,7 +22,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   announcements,
   onRefreshData
 }) => {
-  const [activeTab, setActiveTab] = useState<'events' | 'registrations' | 'memories' | 'announcements' | 'gallery'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery'>('events');
 
   // Gallery Photos State
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
@@ -413,35 +413,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {events.filter(e => e.status === 'Upcoming').length} Upcoming
             </div>
           </div>
-
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: '0.5rem' }}>
-              <span>STUDENT REGISTRATIONS</span>
-              <Users size={18} color="#4facfe" />
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>{registrations.length}</div>
-            <div style={{ fontSize: '0.75rem', color: '#34d399' }}>Student tickets generated</div>
-          </div>
-
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: '0.5rem' }}>
-              <span>PAST MEMORIES POSTED</span>
-              <Camera size={18} color="#7928ca" />
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>{memories.length}</div>
-            <div style={{ fontSize: '0.75rem', color: '#d8b4fe' }}>Timeline gallery entries</div>
-          </div>
-
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: '0.5rem' }}>
-              <span>BROADCAST ALERTS</span>
-              <Bell size={18} color="#f59e0b" />
-            </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>
-              {announcements.filter(a => a.active).length} Active
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Top site announcements</div>
-          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -451,13 +422,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('events')}
           >
             <Calendar size={16} /> Manage Events ({events.length})
-          </button>
-          
-          <button 
-            className={`btn btn-sm ${activeTab === 'registrations' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setActiveTab('registrations')}
-          >
-            <Users size={16} /> Student Registrations ({registrations.length})
           </button>
           
           <button 

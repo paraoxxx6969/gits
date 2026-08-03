@@ -113,21 +113,20 @@ export const EventCard: React.FC<EventCardProps> = ({
             className="btn btn-secondary btn-sm"
             style={{ flex: 1 }}
           >
-            Details
+            See Details
           </button>
           
           <button 
-            onClick={() => onRegisterEvent(event)} 
-            disabled={isFull || isCompleted}
-            className={`btn btn-sm ${isCompleted ? 'btn-secondary' : 'btn-primary'}`}
-            style={{ flex: 1.2, opacity: (isFull || isCompleted) ? 0.6 : 1, cursor: (isFull || isCompleted) ? 'not-allowed' : 'pointer' }}
+            disabled
+            className="btn btn-sm btn-secondary"
+            style={{ flex: 1.2, opacity: 0.7, cursor: 'default' }}
           >
             {isCompleted ? (
               <>Ended</>
             ) : isFull ? (
               <>House Full</>
             ) : (
-              <>Register <ArrowRight size={14} /></>
+              <>🔔 Stay Tuned</>
             )}
           </button>
         </div>

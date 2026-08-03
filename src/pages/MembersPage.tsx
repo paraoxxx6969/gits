@@ -376,16 +376,6 @@ export const MembersPage: React.FC = () => {
         </div>
 
         <div className="m-subline" ref={sublineRef}>
-          <button className="m-arrow-pill">
-            Meet the crew
-            <span className="m-ar">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="7" y1="17" x2="17" y2="7" />
-                <polyline points="7 7 17 7 17 17" />
-              </svg>
-            </span>
-          </button>
-          <div className="m-subline-text">8 members. 60+ shipped events. Zero filler.</div>
         </div>
       </section>
 
