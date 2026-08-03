@@ -452,3 +452,57 @@ export function subscribeToMemories(onUpdate: (memories: EventMemory[]) => void)
     if (unsubscribeSnapshot) unsubscribeSnapshot();
   };
 }
+
+/**
+ * Cloud Firestore Real-time Sync for Event Registrations
+ */
+export async function saveRegistrationToFirestore(reg: any): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_registrations', reg.id);
+    await setDoc(ref, reg);
+    console.log("Synced registration to Cloud Firestore:", reg.id);
+  } catch (err: any) {
+    console.error('Failed to sync registration to Cloud Firestore:', err);
+  }
+}
+
+export function subscribeToRegistrations(onUpdate: (regs: any[]) => void): () => void {
+  if (!db) return () => { };
+  let cancelled = false;
+  let unsubscribeSnapshot: (() => void) | null = null;
+
+  const startListening = () => {
+    if (cancelled || !db) return;
+    try {
+      const col = collection(db, 'event_registrations');
+      unsubscribeSnapshot = onSnapshot(col, (snapshot) => {
+        const regs: any[] = [];
+        snapshot.forEach((docSnap) => {
+          regs.push(docSnap.data());
+        });
+        regs.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+        if (regs.length > 0) {
+          try { localStorage.setItem('gits_club_registrations_v2', JSON.stringify(regs)); } catch (e) { }
+          onUpdate(regs);
+        }
+      }, (err) => console.warn('Registrations Firestore listener error:', err));
+    } catch (err) {
+      console.error('Error establishing registrations listener:', err);
+    }
+  };
+
+  if (auth && !auth.currentUser) {
+    signInAnonymously(auth).catch(() => {}).finally(startListening);
+  } else {
+    startListening();
+  }
+
+  return () => {
+    cancelled = true;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+  };
+}

@@ -5,7 +5,8 @@ import {
   saveEventToFirestore,
   deleteEventFromFirestore,
   saveMemoryToFirestore,
-  deleteMemoryFromFirestore
+  deleteMemoryFromFirestore,
+  saveRegistrationToFirestore
 } from './firebase';
 
 const STORAGE_KEYS = {
@@ -308,6 +309,7 @@ export const StorageService = {
     if (targetEvent) {
       targetEvent.registeredCount = (targetEvent.registeredCount || 0) + 1;
       this.saveEvents(events);
+      saveEventToFirestore(targetEvent);
     }
 
     const ticketCode = `GITS-${data.eventTitle.slice(0, 4).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -321,6 +323,7 @@ export const StorageService = {
 
     registrations.unshift(newReg);
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations));
+    saveRegistrationToFirestore(newReg);
     return newReg;
   },
 

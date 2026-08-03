@@ -19,7 +19,7 @@ import { DigitalPassModal } from './components/DigitalPassModal';
 import { StudentProfileModal } from './components/StudentProfileModal';
 import { LoginPage } from './pages/LoginPage';
 
-import { subscribeToEvents, subscribeToMemories } from './services/firebase';
+import { subscribeToEvents, subscribeToMemories, subscribeToRegistrations } from './services/firebase';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -65,9 +65,14 @@ export const App: React.FC = () => {
       if (cloudMemories.length > 0) setMemories(cloudMemories);
     });
 
+    const unsubRegistrations = subscribeToRegistrations((cloudRegs) => {
+      if (cloudRegs.length > 0) setRegistrations(cloudRegs);
+    });
+
     return () => {
       unsubEvents();
       unsubMemories();
+      unsubRegistrations();
     };
   }, []);
 
