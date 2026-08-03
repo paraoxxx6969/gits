@@ -368,6 +368,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleEventBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          setEventForm(prev => ({
+            ...prev,
+            image: compressedDataUrl
+          }));
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   // Filtered registrations list
   const filteredRegistrations = registrations.filter(r => {
@@ -990,13 +1036,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Banner Image URL</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={eventForm.image}
-                  onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
-                />
+                <label className="form-label">Event Banner Image</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Upload size={16} /> Upload Image File
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }}
+                        onChange={handleEventBannerUpload}
+                      />
+                    </label>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>or paste image URL:</span>
+                  </div>
+
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    placeholder="https://images.unsplash.com/..."
+                    value={eventForm.image}
+                    onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
+                  />
+
+                  {eventForm.image && (
+                    <div style={{ marginTop: '0.25rem', borderRadius: '8px', overflow: 'hidden', height: '140px', border: '1px solid rgba(255,255,255,0.12)', position: 'relative' }}>
+                      <img src={eventForm.image} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', bottom: '6px', left: '8px', background: 'rgba(0,0,0,0.7)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', color: '#00f2fe', fontWeight: 600 }}>
+                        📷 Banner Preview
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
