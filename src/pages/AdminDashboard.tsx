@@ -102,6 +102,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Registrations Filter
   const [regSearch, setRegSearch] = useState('');
   const [regEventFilter, setRegEventFilter] = useState<string>('All');
+  const [regStatusFilter, setRegStatusFilter] = useState<string>('All');
 
   // ----------------------------------------------------
   // Event Form Handlers
@@ -599,7 +600,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           (r.grNo && r.grNo.toLowerCase().includes(regSearch.toLowerCase())) ||
                           r.email.toLowerCase().includes(regSearch.toLowerCase());
     const matchesEvent = regEventFilter === 'All' || r.eventId === regEventFilter;
-    return matchesSearch && matchesEvent;
+    const matchesStatus = regStatusFilter === 'All' || r.status === regStatusFilter;
+    return matchesSearch && matchesEvent && matchesStatus;
   });
 
   return (
@@ -806,6 +808,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {events.map(e => (
                     <option key={e.id} value={e.id}>{e.title}</option>
                   ))}
+                </select>
+
+                <select 
+                  className="form-select"
+                  style={{ width: 'auto', minWidth: '160px' }}
+                  value={regStatusFilter}
+                  onChange={(e) => setRegStatusFilter(e.target.value)}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Pending">⏳ Pending Approval</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Attended">Attended ✓</option>
+                  <option value="Absent">Absent ✗</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
 

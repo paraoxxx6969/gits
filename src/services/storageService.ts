@@ -7,6 +7,7 @@ import {
   saveMemoryToFirestore,
   deleteMemoryFromFirestore,
   saveRegistrationToFirestore,
+  deleteRegistrationFromFirestore,
   saveAnnouncementToFirestore,
   deleteAnnouncementFromFirestore,
   saveCrewMemberToFirestore,
@@ -453,6 +454,7 @@ export const StorageService = {
 
     const filtered = regs.filter(r => r.id !== id);
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(filtered));
+    deleteRegistrationFromFirestore(id);
     return true;
   },
 

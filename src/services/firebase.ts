@@ -353,10 +353,8 @@ export function subscribeToEvents(onUpdate: (events: ClubEvent[]) => void): () =
         snapshot.forEach((docSnap) => {
           events.push(docSnap.data() as ClubEvent);
         });
-        if (events.length > 0) {
-          try { localStorage.setItem('gits_club_events_v2', JSON.stringify(events)); } catch (e) { }
-          onUpdate(events);
-        }
+        try { localStorage.setItem('gits_club_events_v2', JSON.stringify(events)); } catch (e) { }
+        onUpdate(events);
       }, (err) => console.warn('Events Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing events listener:', err);
@@ -461,6 +459,20 @@ export async function saveRegistrationToFirestore(reg: any): Promise<void> {
   }
 }
 
+export async function deleteRegistrationFromFirestore(regId: string): Promise<void> {
+  if (!db) return;
+  try {
+    if (auth && !auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { }
+    }
+    const ref = doc(db, 'event_registrations', regId);
+    await deleteDoc(ref);
+    console.log("Deleted registration from Cloud Firestore:", regId);
+  } catch (err) {
+    console.error('Failed to delete registration from Firestore:', err);
+  }
+}
+
 export function subscribeToRegistrations(onUpdate: (regs: any[]) => void): () => void {
   if (!db) return () => { };
   let cancelled = false;
@@ -476,10 +488,8 @@ export function subscribeToRegistrations(onUpdate: (regs: any[]) => void): () =>
           regs.push(docSnap.data());
         });
         regs.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
-        if (regs.length > 0) {
-          try { localStorage.setItem('gits_club_registrations_v2', JSON.stringify(regs)); } catch (e) { }
-          onUpdate(regs);
-        }
+        try { localStorage.setItem('gits_club_registrations_v2', JSON.stringify(regs)); } catch (e) { }
+        onUpdate(regs);
       }, (err) => console.warn('Registrations Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing registrations listener:', err);
