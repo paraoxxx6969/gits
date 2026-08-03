@@ -12,7 +12,7 @@ interface EventCardProps {
 export const EventCard: React.FC<EventCardProps> = ({
   event,
   onSelectEvent,
-  onRegisterEvent: _onRegisterEvent
+  onRegisterEvent
 }) => {
   const isFull = event.registeredCount >= event.capacity;
   const isCompleted = event.status === 'Completed';
@@ -116,19 +116,31 @@ export const EventCard: React.FC<EventCardProps> = ({
             See Details
           </button>
           
-          <button 
-            disabled
-            className="btn btn-sm btn-secondary"
-            style={{ flex: 1.2, opacity: 0.7, cursor: 'default' }}
-          >
-            {isCompleted ? (
-              <>Ended</>
-            ) : isFull ? (
-              <>House Full</>
-            ) : (
-              <>🔔 Stay Tuned</>
-            )}
-          </button>
+          {isCompleted ? (
+            <button 
+              disabled
+              className="btn btn-sm btn-secondary"
+              style={{ flex: 1.2, opacity: 0.6, cursor: 'not-allowed' }}
+            >
+              Ended
+            </button>
+          ) : isFull ? (
+            <button 
+              disabled
+              className="btn btn-sm btn-secondary"
+              style={{ flex: 1.2, opacity: 0.6, cursor: 'not-allowed' }}
+            >
+              House Full
+            </button>
+          ) : (
+            <button 
+              onClick={() => onRegisterEvent(event)} 
+              className="btn btn-sm btn-primary"
+              style={{ flex: 1.2 }}
+            >
+              ⚡ Register Now
+            </button>
+          )}
         </div>
 
       </div>

@@ -465,7 +465,7 @@ export const StorageService = {
     return true;
   },
 
-  // User Session Management
+  // User Session & Profile Management
   getUserSession(): UserSession {
     const raw = localStorage.getItem(STORAGE_KEYS.USER_SESSION);
     if (!raw) return { role: 'guest' };
@@ -474,10 +474,37 @@ export const StorageService = {
 
   saveUserSession(session: UserSession) {
     localStorage.setItem(STORAGE_KEYS.USER_SESSION, JSON.stringify(session));
+    if (session.role === 'student' && session.studentInfo && session.studentInfo.isProfileComplete) {
+      this.saveStudentProfileByEmail(session.studentInfo);
+    }
   },
 
   clearUserSession() {
     localStorage.setItem(STORAGE_KEYS.USER_SESSION, JSON.stringify({ role: 'guest' }));
+  },
+
+  getStudentProfileByEmail(email: string) {
+    if (!email) return null;
+    try {
+      const raw = localStorage.getItem('gits_club_student_profiles_map_v1');
+      if (!raw) return null;
+      const map = JSON.parse(raw);
+      return map[email.toLowerCase().trim()] || null;
+    } catch {
+      return null;
+    }
+  },
+
+  saveStudentProfileByEmail(profile: any) {
+    if (!profile || !profile.email) return;
+    try {
+      const raw = localStorage.getItem('gits_club_student_profiles_map_v1');
+      const map = raw ? JSON.parse(raw) : {};
+      map[profile.email.toLowerCase().trim()] = profile;
+      localStorage.setItem('gits_club_student_profiles_map_v1', JSON.stringify(map));
+    } catch (e) {
+      console.error('Failed to save student profile to map:', e);
+    }
   },
 
   resetAllData() {

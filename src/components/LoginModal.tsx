@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, ShieldCheck, Info, ArrowRight } from 'lucide-react';
 import type { UserSession } from '../types';
+import { StorageService } from '../services/storageService';
 
 
 interface LoginModalProps {
@@ -36,9 +37,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
     setError('');
+
+    const existingProfile = StorageService.getStudentProfileByEmail(studentEmail.trim());
+
     onLoginSuccess({
       role: 'student',
-      studentInfo: {
+      studentInfo: (existingProfile && existingProfile.isProfileComplete) ? existingProfile : {
         name: studentName.trim(),
         rollNo: studentRollNo.trim().toUpperCase(),
         grNo: '',

@@ -3,6 +3,7 @@ import { User, ShieldCheck, ArrowRight, Loader2, Mail, Lock } from 'lucide-react
 import type { UserSession } from '../types';
 import gitsLogo from '../assets/gits-logo.jpg';
 import { signInWithGoogle, signInWithGithub, signInWithEmailPassword, isFirebaseConfigured } from '../services/firebase';
+import { StorageService } from '../services/storageService';
 
 interface LoginPageProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -31,9 +32,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         ? await signInWithGoogle() 
         : await signInWithGithub();
 
+      const existingProfile = StorageService.getStudentProfileByEmail(result.email);
+
       onLoginSuccess({
         role: 'student',
-        studentInfo: {
+        studentInfo: (existingProfile && existingProfile.isProfileComplete) ? existingProfile : {
           name: result.name,
           rollNo: result.rollNo,
           grNo: '',
@@ -64,9 +67,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       setError('');
       const result = await signInWithEmailPassword(studentEmail.trim(), studentPassword.trim());
 
+      const existingProfile = StorageService.getStudentProfileByEmail(result.email);
+
       onLoginSuccess({
         role: 'student',
-        studentInfo: {
+        studentInfo: (existingProfile && existingProfile.isProfileComplete) ? existingProfile : {
           name: result.name,
           rollNo: result.rollNo,
           grNo: '',
