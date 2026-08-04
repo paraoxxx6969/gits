@@ -349,19 +349,36 @@
   transition: opacity 0.4s, transform 0.4s cubic-bezier(0.6, 0, 0.2, 1);
   border: 1px solid rgba(0, 242, 254, 0.15);
 }
+.members-page .m-card:hover .m-t-meta,
 .members-page .m-t-card:hover .m-t-meta {
   transform: translateY(0);
   opacity: 1;
 }
 .members-page .m-t-meta .m-nm {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .members-page .m-t-meta .m-rl {
-  font-size: 11px;
-  color: rgba(0, 242, 254, 0.7);
+  font-size: 10.5px;
+  color: rgba(0, 242, 254, 0.85);
   margin-top: 2px;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.members-page .m-card .m-t-meta {
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  pointer-events: none;
 }
 
 

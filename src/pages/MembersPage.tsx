@@ -79,7 +79,7 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
         }, 0.7)
         .to(sublineRef.current, { opacity: 1, y: 0, duration: 0.8 }, 1.5);
 
-      // ---- CARD HOVER 3D & LEAVE RESET ----
+      // ---- CARD HOVER (NO POP-UP) ----
       cardsRef.current.forEach((card, i) => {
         if (!card) return;
         const restRot = CARD_ROTS[i];
@@ -90,11 +90,10 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
           const py = (e.clientY - r.top) / r.height - 0.5;
           card.style.zIndex = '35';
 
+          // Subtle 3D tilt without pop-up or scale
           gsap.to(card, {
-            y: -20,
-            scale: 1.1,
-            rotateX: -py * 14,
-            rotateY: px * 14,
+            rotateX: -py * 8,
+            rotateY: px * 8,
             duration: 0.25,
             ease: 'power2.out',
             overwrite: 'auto',
@@ -103,8 +102,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
 
         const onCardLeave = () => {
           gsap.to(card, {
-            y: 0,
-            scale: 1,
             rotateX: 0,
             rotateY: 0,
             rotation: restRot,
@@ -117,18 +114,9 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
           });
         };
 
-        const onCardClick = () => {
-          gsap.fromTo(card, { scale: 1.15 }, {
-            scale: 1,
-            duration: 0.2,
-            ease: 'power2.inOut',
-          });
-        };
-
         card.addEventListener('mouseenter', onCardMove);
         card.addEventListener('mousemove', onCardMove);
         card.addEventListener('mouseleave', onCardLeave);
-        card.addEventListener('click', onCardClick);
       });
 
       // ---- SCROLL: CARDS FAN OUT + BIG TEXT SCALES ----
@@ -273,6 +261,10 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
               ref={(el) => { cardsRef.current[i] = el; }}
             >
               <img src={member.img} alt={member.name} />
+              <div className="m-t-meta">
+                <div className="m-nm">{member.name}</div>
+                <div className="m-rl">{member.role}</div>
+              </div>
             </div>
           ))}
         </div>
