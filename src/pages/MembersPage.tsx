@@ -79,93 +79,53 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
         }, 0.7)
         .to(sublineRef.current, { opacity: 1, y: 0, duration: 0.8 }, 1.5);
 
-      // ---- CONTINUOUS FLOAT ----
+      // ---- CARD HOVER 3D & LEAVE RESET ----
       cardsRef.current.forEach((card, i) => {
         if (!card) return;
-        const rot = CARD_ROTS[i];
-        gsap.to(card, {
-          y: `+=${8 + (i % 3) * 5}`,
-          rotation: rot + (i % 2 === 0 ? 1.5 : -1.5),
-          duration: 3 + (i % 4) * 0.5,
-          delay: 1.8 + i * 0.1,
-          ease: 'sine.inOut',
-          yoyo: true,
-          repeat: -1,
-        });
-      });
-
-      // ---- MOUSE PARALLAX ----
-      let mx = 0, my = 0, tx = 0, ty = 0;
-      const hero = heroRef.current;
-      const onMove = (e: MouseEvent) => {
-        if (!hero) return;
-        const r = hero.getBoundingClientRect();
-        mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-        my = ((e.clientY - r.top) / r.height - 0.5) * 2;
-      };
-      const onLeave = () => { mx = 0; my = 0; };
-      hero?.addEventListener('mousemove', onMove);
-      hero?.addEventListener('mouseleave', onLeave);
-
-      let rafId: number;
-      const parallax = () => {
-        tx += (mx - tx) * 0.05;
-        ty += (my - ty) * 0.05;
-        cardsRef.current.forEach((card, i) => {
-          if (!card) return;
-          const d = CARD_DEPTHS[i];
-          card.style.translate = `${tx * d}px ${ty * d * 0.5}px`;
-        });
-        rafId = requestAnimationFrame(parallax);
-      };
-      rafId = requestAnimationFrame(parallax);
-
-      // ---- CARD HOVER 3D ----
-      cardsRef.current.forEach((card, i) => {
-        if (!card) return;
-        const img = card.querySelector('img');
-        const defaultZ = card.style.zIndex || (i + 1).toString();
-        card.dataset.defaultZIndex = defaultZ;
+        const restRot = CARD_ROTS[i];
 
         const onCardMove = (e: MouseEvent) => {
           const r = card.getBoundingClientRect();
           const px = (e.clientX - r.left) / r.width - 0.5;
           const py = (e.clientY - r.top) / r.height - 0.5;
-          card.style.zIndex = '30';
-          if (img) {
-            gsap.to(img, {
-              scale: 1.1,
-              rotateX: -py * 12,
-              rotateY: px * 12,
-              duration: 0.3,
-              ease: 'power2.out',
-              transformPerspective: 700,
-            });
-          }
+          card.style.zIndex = '35';
+
+          gsap.to(card, {
+            y: -20,
+            scale: 1.1,
+            rotateX: -py * 14,
+            rotateY: px * 14,
+            duration: 0.25,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          });
         };
+
         const onCardLeave = () => {
-          card.style.zIndex = card.dataset.defaultZIndex || '';
-          if (img) {
-            gsap.to(img, {
-              scale: 1,
-              rotateX: 0,
-              rotateY: 0,
-              duration: 0.5,
-              ease: 'power2.out',
-            });
-          }
+          gsap.to(card, {
+            y: 0,
+            scale: 1,
+            rotateX: 0,
+            rotateY: 0,
+            rotation: restRot,
+            duration: 0.4,
+            ease: 'power2.out',
+            overwrite: 'auto',
+            onComplete: () => {
+              card.style.zIndex = '';
+            },
+          });
         };
+
         const onCardClick = () => {
-          if (img) {
-            gsap.fromTo(img, { scale: 1.15 }, {
-              scale: 1.05,
-              duration: 0.15,
-              yoyo: true,
-              repeat: 1,
-              ease: 'power2.inOut',
-            });
-          }
+          gsap.fromTo(card, { scale: 1.15 }, {
+            scale: 1,
+            duration: 0.2,
+            ease: 'power2.inOut',
+          });
         };
+
+        card.addEventListener('mouseenter', onCardMove);
         card.addEventListener('mousemove', onCardMove);
         card.addEventListener('mouseleave', onCardLeave);
         card.addEventListener('click', onCardClick);
@@ -270,9 +230,6 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
 
       // Store cleanup
       animCleanupRef.current = () => {
-        cancelAnimationFrame(rafId);
-        hero?.removeEventListener('mousemove', onMove);
-        hero?.removeEventListener('mouseleave', onLeave);
         bigWrap?.removeEventListener('mouseenter', onBigEnter);
         bigWrap?.removeEventListener('mouseleave', onBigLeave);
       };
