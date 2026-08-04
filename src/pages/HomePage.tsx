@@ -9,13 +9,19 @@ interface HomePageProps {
   onSelectEvent: (event: ClubEvent) => void;
   onRegisterEvent: (event: ClubEvent) => void;
   setActiveTab: (tab: string) => void;
+  registrations?: import('../types').EventRegistration[];
+  userEmail?: string;
+  userRollNo?: string;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   events,
   onSelectEvent,
   onRegisterEvent,
-  setActiveTab
+  setActiveTab,
+  registrations = [],
+  userEmail,
+  userRollNo
 }) => {
   const upcomingEvents = events.filter(e => e.status === 'Upcoming' || e.status === 'Live').slice(0, 3);
 
@@ -75,14 +81,25 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {upcomingEvents.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-              {upcomingEvents.map(event => (
-                <EventCard 
-                  key={event.id}
-                  event={event}
-                  onSelectEvent={onSelectEvent}
-                  onRegisterEvent={onRegisterEvent}
-                />
-              ))}
+              {upcomingEvents.map(event => {
+                const userReg = registrations.find(r =>
+                  r.eventId === event.id && (
+                    (userEmail && r.email.toLowerCase() === userEmail.toLowerCase()) ||
+                    (userRollNo && r.rollNo.toUpperCase() === userRollNo.toUpperCase())
+                  )
+                );
+                const isRegistered = Boolean(userReg && userReg.status !== 'Cancelled');
+                return (
+                  <EventCard 
+                    key={event.id}
+                    event={event}
+                    onSelectEvent={onSelectEvent}
+                    onRegisterEvent={onRegisterEvent}
+                    isRegistered={isRegistered}
+                    userRegStatus={userReg?.status}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div style={{ padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>

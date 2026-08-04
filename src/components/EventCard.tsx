@@ -107,8 +107,18 @@ export const EventCard: React.FC<EventCardProps> = ({
               <Tag size={10} /> {event.category}
             </span>
             {(event.isPaid || (event.fee && event.fee !== 'Free')) && (
-              <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.25)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', fontWeight: 700 }}>
-                💳 {event.fee}
+              <span 
+                className="badge" 
+                style={{ 
+                  background: 'rgba(245, 158, 11, 0.2)', 
+                  color: '#fbbf24', 
+                  border: '1px solid rgba(245, 158, 11, 0.45)', 
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-main)',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                {event.fee}
               </span>
             )}
           </div>

@@ -278,6 +278,9 @@ export const App: React.FC = () => {
             onSelectEvent={(evt) => setSelectedEvent(evt)}
             onRegisterEvent={(evt) => setRegisteringEvent(evt)}
             setActiveTab={setActiveTab}
+            registrations={registrations}
+            userEmail={userSession.studentInfo?.email}
+            userRollNo={userSession.studentInfo?.rollNo}
           />
         )}
 
