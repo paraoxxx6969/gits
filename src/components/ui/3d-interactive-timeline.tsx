@@ -27,13 +27,13 @@ interface Timeline3DProps {
 
 // Category → icon + color mapping
 const CATEGORY_META: Record<string, { icon: React.ReactNode; color: string; glowColor: string; bgBadge: string }> = {
-  Hackathon:       { icon: <Zap size={18} />,      color: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.4)', bgBadge: 'rgba(245, 158, 11, 0.15)' },
-  Workshop:        { icon: <Cpu size={18} />,       color: '#00f2fe', glowColor: 'rgba(0, 242, 254, 0.4)', bgBadge: 'rgba(0, 242, 254, 0.15)' },
-  'Coding Contest':{ icon: <Code size={18} />,      color: '#a78bfa', glowColor: 'rgba(167, 139, 250, 0.4)', bgBadge: 'rgba(167, 139, 250, 0.15)' },
-  'Tech Talk':     { icon: <Globe size={18} />,     color: '#34d399', glowColor: 'rgba(52, 211, 153, 0.4)', bgBadge: 'rgba(52, 211, 153, 0.15)' },
-  'Project Expo':  { icon: <Star size={18} />,      color: '#fb7185', glowColor: 'rgba(251, 113, 133, 0.4)', bgBadge: 'rgba(251, 113, 133, 0.15)' },
-  Networking:      { icon: <Users size={18} />,     color: '#60a5fa', glowColor: 'rgba(96, 165, 250, 0.4)', bgBadge: 'rgba(96, 165, 250, 0.15)' },
-  default:         { icon: <Award size={18} />,     color: '#7928ca', glowColor: 'rgba(121, 40, 202, 0.4)', bgBadge: 'rgba(121, 40, 202, 0.15)' },
+  Hackathon:       { icon: <Zap size={18} />,      color: '#f59e0b', glowColor: 'rgba(245, 158, 11, 0.4)', bgBadge: 'rgba(245, 158, 11, 0.25)' },
+  Workshop:        { icon: <Cpu size={18} />,       color: '#00f2fe', glowColor: 'rgba(0, 242, 254, 0.4)', bgBadge: 'rgba(0, 242, 254, 0.25)' },
+  'Coding Contest':{ icon: <Code size={18} />,      color: '#a78bfa', glowColor: 'rgba(167, 139, 250, 0.4)', bgBadge: 'rgba(167, 139, 250, 0.25)' },
+  'Tech Talk':     { icon: <Globe size={18} />,     color: '#34d399', glowColor: 'rgba(52, 211, 153, 0.4)', bgBadge: 'rgba(52, 211, 153, 0.25)' },
+  'Project Expo':  { icon: <Star size={18} />,      color: '#fb7185', glowColor: 'rgba(251, 113, 133, 0.4)', bgBadge: 'rgba(251, 113, 133, 0.25)' },
+  Networking:      { icon: <Users size={18} />,     color: '#60a5fa', glowColor: 'rgba(96, 165, 250, 0.4)', bgBadge: 'rgba(96, 165, 250, 0.25)' },
+  default:         { icon: <Award size={18} />,     color: '#7928ca', glowColor: 'rgba(121, 40, 202, 0.4)', bgBadge: 'rgba(121, 40, 202, 0.25)' },
 };
 
 interface TimelineCardProps {
@@ -53,7 +53,6 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
   mousePosition,
   showImages,
 }) => {
-  // triggerOnce: true ensures 60fps smooth scrolling without layout thrashes or lag spikes
   const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: true });
   const controls = useAnimation();
   const isLeft = index % 2 === 0;
@@ -69,12 +68,12 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
   return (
     <div
       ref={ref}
-      className="relative mb-12 md:mb-16 grid grid-cols-1 md:grid-cols-2 w-full items-start"
+      className="relative mb-10 md:mb-16 grid grid-cols-1 md:grid-cols-2 w-full items-start"
     >
-      {/* Center Node Icon Dot */}
-      <div className="absolute top-6 left-5 md:left-1/2 -translate-x-1/2 z-20">
+      {/* Center Node Icon Dot (Desktop only - sits on the central spine) */}
+      <div className="hidden md:flex absolute top-6 left-1/2 -translate-x-1/2 z-20">
         <motion.div
-          className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border-4 cursor-pointer select-none"
+          className="w-10 h-10 rounded-full flex items-center justify-center border-4 cursor-pointer select-none"
           initial="hidden"
           animate={controls}
           variants={{
@@ -100,12 +99,12 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
         </motion.div>
       </div>
 
-      {/* Content Card */}
+      {/* Content Card Positioned in Column 1 (Left) or Column 2 (Right) on Desktop */}
       <div
         className={`w-full ${
           isLeft
-            ? 'md:col-start-1 pl-14 md:pl-0 md:pr-10'
-            : 'md:col-start-2 pl-14 md:pl-10 md:pr-0'
+            ? 'md:col-start-1 md:pr-10'
+            : 'md:col-start-2 md:pl-10'
         }`}
       >
         <motion.div
@@ -115,18 +114,16 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
           variants={{
             hidden: {
               opacity: 0,
-              scale: 0.95,
-              x: isLeft ? -40 : 40,
+              scale: 0.96,
               y: 20
             },
             visible: {
               opacity: 1,
               scale: 1,
-              x: 0,
               y: 0,
               transition: {
-                duration: 0.5,
-                ease: [0.16, 1, 0.3, 1], // Ultra-fast hardware accelerated spring cubic-bezier
+                duration: 0.45,
+                ease: [0.16, 1, 0.3, 1],
               },
             },
           }}
@@ -161,13 +158,14 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
               {event.category && (
                 <div className="absolute top-3 left-3">
                   <span
-                    className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md"
+                    className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md flex items-center gap-1.5"
                     style={{
-                      background: meta.bgBadge,
+                      background: 'rgba(8, 12, 20, 0.75)',
                       color: meta.color,
-                      border: `1px solid ${meta.color}66`,
+                      border: `1px solid ${meta.color}88`,
                     }}
                   >
+                    {meta.icon}
                     {event.category}
                   </span>
                 </div>
@@ -188,7 +186,7 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
               {event.attendeesCount && (
                 <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                   <Users size={13} color="#34d399" />
-                  <span>{event.attendeesCount}+ Hackers &amp; Attendees</span>
+                  <span>{event.attendeesCount}+ Attendees</span>
                 </div>
               )}
             </div>
@@ -301,15 +299,15 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
     >
       <div className="relative max-w-6xl mx-auto px-4 md:px-6">
 
-        {/* Static Background Spine Line */}
+        {/* Central Vertical Spine Line (Desktop only - centered) */}
         <div
-          className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none opacity-20"
+          className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none opacity-20"
           style={{ background: 'rgba(255, 255, 255, 0.3)' }}
         />
 
-        {/* Animated Phase Travel Beam Line */}
+        {/* Animated Phase Travel Beam Line (Desktop only) */}
         <motion.div
-          className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none origin-top"
+          className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none origin-top"
           style={{
             scaleY,
             background: 'linear-gradient(to bottom, #f59e0b 0%, #7928ca 40%, #00f2fe 70%, #10b981 100%)',
@@ -319,7 +317,7 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
         />
 
         {/* Timeline Event Items */}
-        <div className="relative z-10 pt-4">
+        <div className="relative z-10 pt-2 md:pt-4">
           {events.map((event, index) => (
             <TimelineCard
               key={event.id}

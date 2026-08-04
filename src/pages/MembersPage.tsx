@@ -121,41 +121,50 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
       rafId = requestAnimationFrame(parallax);
 
       // ---- CARD HOVER 3D ----
-      cardsRef.current.forEach((card) => {
+      cardsRef.current.forEach((card, i) => {
         if (!card) return;
+        const img = card.querySelector('img');
+        const defaultZ = card.style.zIndex || (i + 1).toString();
+        card.dataset.defaultZIndex = defaultZ;
+
         const onCardMove = (e: MouseEvent) => {
           const r = card.getBoundingClientRect();
           const px = (e.clientX - r.left) / r.width - 0.5;
           const py = (e.clientY - r.top) / r.height - 0.5;
-          gsap.to(card, {
-            rotateX: -py * 16,
-            rotateY: px * 16,
-            scale: 1.12,
-            zIndex: 20,
-            duration: 0.4,
-            ease: 'power2.out',
-            transformPerspective: 700,
-            overwrite: 'auto',
-          });
+          card.style.zIndex = '30';
+          if (img) {
+            gsap.to(img, {
+              scale: 1.1,
+              rotateX: -py * 12,
+              rotateY: px * 12,
+              duration: 0.3,
+              ease: 'power2.out',
+              transformPerspective: 700,
+            });
+          }
         };
         const onCardLeave = () => {
-          gsap.to(card, {
-            rotateX: 0,
-            rotateY: 0,
-            scale: 1,
-            duration: 0.8,
-            ease: 'elastic.out(1, 0.6)',
-            overwrite: 'auto',
-          });
+          card.style.zIndex = card.dataset.defaultZIndex || '';
+          if (img) {
+            gsap.to(img, {
+              scale: 1,
+              rotateX: 0,
+              rotateY: 0,
+              duration: 0.5,
+              ease: 'power2.out',
+            });
+          }
         };
         const onCardClick = () => {
-          gsap.fromTo(card, { scale: 1.15 }, {
-            scale: 1.05,
-            duration: 0.15,
-            yoyo: true,
-            repeat: 1,
-            ease: 'power2.inOut',
-          });
+          if (img) {
+            gsap.fromTo(img, { scale: 1.15 }, {
+              scale: 1.05,
+              duration: 0.15,
+              yoyo: true,
+              repeat: 1,
+              ease: 'power2.inOut',
+            });
+          }
         };
         card.addEventListener('mousemove', onCardMove);
         card.addEventListener('mouseleave', onCardLeave);
