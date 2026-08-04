@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion, useAnimation, useScroll, useSpring } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import {
   Trophy, Award, Code, Globe, Cpu, Zap, Star, Users, Calendar
@@ -53,7 +53,7 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
   mousePosition,
   showImages,
 }) => {
-  const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: false });
+  const [ref, inView] = useInView({ threshold: 0.15, triggerOnce: false });
   const controls = useAnimation();
   const isLeft = index % 2 === 0; // Even index -> Left column on desktop, Odd index -> Right column on desktop
   const meta = CATEGORY_META[event.category || ''] || CATEGORY_META['default'];
@@ -62,30 +62,40 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
   useEffect(() => {
     if (inView) {
       controls.start('visible');
+    } else {
+      controls.start('hidden');
     }
   }, [controls, inView]);
 
   return (
     <div
       ref={ref}
-      className="relative mb-12 md:mb-16 grid grid-cols-1 md:grid-cols-2 w-full items-start"
+      className="relative mb-14 md:mb-20 grid grid-cols-1 md:grid-cols-2 w-full items-start"
     >
-      {/* Center Node Icon Dot */}
-      {/* Mobile: Sitting on left-5 (20px). Desktop: Sitting dead-center on center line (left-1/2) */}
+      {/* Center Node Icon Dot with blur-to-crisp reveal */}
       <div className="absolute top-6 left-5 md:left-1/2 -translate-x-1/2 z-20">
         <motion.div
           className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border-4 cursor-pointer select-none"
+          initial="hidden"
+          animate={controls}
+          variants={{
+            hidden: { scale: 0.4, opacity: 0, filter: 'blur(8px)' },
+            visible: {
+              scale: 1,
+              opacity: 1,
+              filter: 'blur(0px)',
+              transition: { duration: 0.5, ease: 'easeOut', delay: 0.1 },
+            },
+          }}
           style={{
             background: meta.color,
             borderColor: '#080c14',
-            boxShadow: isActive ? `0 0 24px ${meta.glowColor}` : `0 0 12px ${meta.glowColor}`,
+            boxShadow: isActive ? `0 0 28px ${meta.glowColor}` : `0 0 14px ${meta.glowColor}`,
             color: '#080c14',
             fontWeight: 800
           }}
           whileHover={{ scale: 1.25 }}
           onClick={() => setActiveEvent(isActive ? null : event.id)}
-          animate={isActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-          transition={{ repeat: isActive ? Infinity : 0, duration: 1.5 }}
         >
           {event.icon ?? meta.icon}
         </motion.div>
@@ -104,12 +114,23 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
           initial="hidden"
           animate={controls}
           variants={{
-            hidden: { opacity: 0, x: isLeft ? -50 : 50, y: 25 },
+            hidden: {
+              opacity: 0,
+              filter: 'blur(12px)',
+              scale: 0.92,
+              x: isLeft ? -70 : 70,
+              y: 35
+            },
             visible: {
               opacity: 1,
+              filter: 'blur(0px)',
+              scale: 1,
               x: 0,
               y: 0,
-              transition: { duration: 0.65, ease: 'easeOut' },
+              transition: {
+                duration: 0.75,
+                ease: [0.25, 0.1, 0.25, 1.0], // smooth cubic bezier transition
+              },
             },
           }}
           style={{
@@ -247,6 +268,18 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Scroll Progress Animation for vertical beam line
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start 70%", "end 30%"]
+  });
+
+  const scaleY = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -269,13 +302,19 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
     >
       <div className="relative max-w-6xl mx-auto px-4 md:px-6">
 
-        {/* Central Vertical Spine Line */}
-        {/* On desktop: Exactly centered at left-1/2. On mobile: Left aligned at left-5 (20px) */}
+        {/* Static Background Spine Line */}
         <div
-          className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none"
+          className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none opacity-20"
+          style={{ background: 'rgba(255, 255, 255, 0.3)' }}
+        />
+
+        {/* Animated Phase Travel Beam Line (Glows & fills down from 1st phase to 2nd phase as you scroll) */}
+        <motion.div
+          className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none origin-top"
           style={{
+            scaleY,
             background: 'linear-gradient(to bottom, #f59e0b 0%, #7928ca 40%, #00f2fe 70%, #10b981 100%)',
-            boxShadow: '0 0 16px rgba(0, 242, 254, 0.4)',
+            boxShadow: '0 0 18px rgba(0, 242, 254, 0.8), 0 0 30px rgba(121, 40, 202, 0.6)',
           }}
         />
 
