@@ -2075,12 +2075,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <label className="form-label" style={{ fontWeight: 700, color: '#fff' }}>Select Event to Edit Feedback Questions *</label>
                 <select
                   className="form-select"
-                  style={{ background: 'rgba(0, 242, 254, 0.05)', borderColor: 'rgba(0, 242, 254, 0.3)', color: '#fff', fontWeight: 600 }}
+                  style={{ background: '#0d1426', borderColor: 'rgba(0, 242, 254, 0.4)', color: '#fff', fontWeight: 600 }}
                   value={selectedEventForQuestions}
                   onChange={(e) => handleSelectEventForQuestions(e.target.value)}
                 >
                   {events.map(e => (
-                    <option key={e.id} value={e.id}>{e.title} ({e.category} - {e.date})</option>
+                    <option key={e.id} value={e.id} style={{ background: '#0d1426', color: '#fff' }}>{e.title} ({e.category} · {e.date})</option>
                   ))}
                 </select>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
