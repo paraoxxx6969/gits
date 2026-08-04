@@ -4,7 +4,7 @@ import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos, subscribeToFeedback } from '../services/firebase';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
-  Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck, MessageSquare, Star
+  Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck, MessageSquare, Star, Settings, ChevronUp, ChevronDown, Check
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -39,6 +39,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     year: '2026'
   });
 
+  // Dedicated Feedback Question Manager Modal state
+  const [isQuestionManagerOpen, setIsQuestionManagerOpen] = useState(false);
+  const [selectedEventForQuestions, setSelectedEventForQuestions] = useState<string>('');
+  const [questionsForm, setQuestionsForm] = useState<FeedbackQuestion[]>([]);
+  const [questionsSaveSuccess, setQuestionsSaveSuccess] = useState(false);
+
   // Subscribe to Cloud Firestore photos & feedback in Admin Panel
   useEffect(() => {
     const unsubGallery = subscribeToGalleryPhotos((cloudPhotos) => {
@@ -49,6 +55,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
     return () => { unsubGallery(); unsubFeedback(); };
   }, []);
+
+  // Handlers for Feedback Question Manager Modal
+  const handleOpenQuestionManager = (targetEventId?: string) => {
+    const eventId = targetEventId || (feedbackEventFilter !== 'All' ? feedbackEventFilter : (events[0]?.id || ''));
+    setSelectedEventForQuestions(eventId);
+    
+    const evt = events.find(e => e.id === eventId);
+    const existing = (evt && evt.feedbackQuestions && evt.feedbackQuestions.length > 0)
+      ? evt.feedbackQuestions
+      : [
+          { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' as const },
+          { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' as const },
+          { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' as const }
+        ];
+    setQuestionsForm(existing.map(q => ({ ...q })));
+    setIsQuestionManagerOpen(true);
+  };
+
+  const handleSelectEventForQuestions = (eventId: string) => {
+    setSelectedEventForQuestions(eventId);
+    const evt = events.find(e => e.id === eventId);
+    const existing = (evt && evt.feedbackQuestions && evt.feedbackQuestions.length > 0)
+      ? evt.feedbackQuestions
+      : [
+          { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' as const },
+          { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' as const },
+          { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' as const }
+        ];
+    setQuestionsForm(existing.map(q => ({ ...q })));
+  };
+
+  const handleSaveQuestionsForEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEventForQuestions) return;
+
+    StorageService.updateEvent(selectedEventForQuestions, {
+      feedbackQuestions: questionsForm,
+      feedbackEnabled: true
+    });
+
+    setQuestionsSaveSuccess(true);
+    onRefreshData();
+    setTimeout(() => {
+      setQuestionsSaveSuccess(false);
+      setIsQuestionManagerOpen(false);
+    }, 1000);
+  };
 
   // Event modal state
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -1271,6 +1324,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   ))}
                 </select>
 
+                <button 
+                  className="btn btn-secondary btn-sm"
+                  style={{ borderColor: 'rgba(0, 242, 254, 0.4)', color: '#00f2fe', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  onClick={() => handleOpenQuestionManager()}
+                >
+                  <Settings size={16} /> Edit Feedback Form Questions
+                </button>
+
                 <button className="btn btn-primary btn-sm" onClick={handleExportFeedbackCSV}>
                   <Download size={16} /> Export Feedback CSV
                 </button>
@@ -1986,6 +2047,186 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button type="button" className="btn btn-secondary" onClick={() => setIsGalleryModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Add Photo to Globe</button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT FEEDBACK FORM QUESTIONS */}
+      {isQuestionManagerOpen && (
+        <div className="modal-overlay" onClick={() => setIsQuestionManagerOpen(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
+            <div style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(121, 40, 202, 0.15) 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#00f2fe', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
+                  <Settings size={14} /> Admin Feedback Form Editor
+                </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', margin: 0 }}>Configure Feedback Questions</h3>
+              </div>
+              <button onClick={() => setIsQuestionManagerOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuestionsForEvent} style={{ padding: '1.5rem' }}>
+              
+              {/* Target Event Selection */}
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label" style={{ fontWeight: 700, color: '#fff' }}>Select Event to Edit Feedback Questions *</label>
+                <select
+                  className="form-select"
+                  style={{ background: 'rgba(0, 242, 254, 0.05)', borderColor: 'rgba(0, 242, 254, 0.3)', color: '#fff', fontWeight: 600 }}
+                  value={selectedEventForQuestions}
+                  onChange={(e) => handleSelectEventForQuestions(e.target.value)}
+                >
+                  {events.map(e => (
+                    <option key={e.id} value={e.id}>{e.title} ({e.category} - {e.date})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  Students registering or viewing this event will answer these exact customized feedback questions.
+                </div>
+              </div>
+
+              {/* Questions List Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontWeight: 700, color: '#00f2fe', fontSize: '0.9rem' }}>
+                  Questions List ({questionsForm.length} total)
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem' }}
+                  onClick={() => {
+                    setQuestionsForm([
+                      ...questionsForm,
+                      { id: 'q-' + Date.now(), questionText: 'New Custom Feedback Question', type: 'text' }
+                    ]);
+                  }}
+                >
+                  <Plus size={14} /> Add Question
+                </button>
+              </div>
+
+              {/* Questions List Items */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '360px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {questionsForm.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
+                    No questions added yet. Click "+ Add Question" above to create your first question.
+                  </div>
+                ) : (
+                  questionsForm.map((q, idx) => (
+                    <div 
+                      key={q.id || idx}
+                      style={{
+                        padding: '0.85rem',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#00f2fe', fontWeight: 800 }}>Question {idx + 1}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '0.2rem 0.4rem', opacity: idx === 0 ? 0.3 : 1 }}
+                            onClick={() => {
+                              const updated = [...questionsForm];
+                              const temp = updated[idx - 1];
+                              updated[idx - 1] = updated[idx];
+                              updated[idx] = temp;
+                              setQuestionsForm(updated);
+                            }}
+                            title="Move Question Up"
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            disabled={idx === questionsForm.length - 1}
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '0.2rem 0.4rem', opacity: idx === questionsForm.length - 1 ? 0.3 : 1 }}
+                            onClick={() => {
+                              const updated = [...questionsForm];
+                              const temp = updated[idx + 1];
+                              updated[idx + 1] = updated[idx];
+                              updated[idx] = temp;
+                              setQuestionsForm(updated);
+                            }}
+                            title="Move Question Down"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={() => {
+                              setQuestionsForm(questionsForm.filter((_, i) => i !== idx));
+                            }}
+                            title="Delete Question"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}
+                          placeholder="e.g. How would you rate the keynote speaker?"
+                          value={q.questionText}
+                          onChange={(e) => {
+                            const updated = [...questionsForm];
+                            updated[idx] = { ...updated[idx], questionText: e.target.value };
+                            setQuestionsForm(updated);
+                          }}
+                        />
+                        <select
+                          className="form-select"
+                          style={{ width: 'auto', padding: '0.4rem 0.6rem', fontSize: '0.8rem', minWidth: '130px' }}
+                          value={q.type}
+                          onChange={(e) => {
+                            const updated = [...questionsForm];
+                            updated[idx] = { ...updated[idx], type: e.target.value as any };
+                            setQuestionsForm(updated);
+                          }}
+                        >
+                          <option value="rating">1-5 Rating ★</option>
+                          <option value="text">Text Input 📝</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {questionsSaveSuccess && (
+                <div style={{ marginTop: '1rem', padding: '0.65rem 1rem', background: 'rgba(52, 211, 153, 0.15)', border: '1px solid #34d399', borderRadius: '8px', color: '#34d399', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Check size={16} /> Feedback Form Questions saved and updated live!
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsQuestionManagerOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Check size={16} /> Save Questions to Event
+                </button>
+              </div>
+
             </form>
           </div>
         </div>

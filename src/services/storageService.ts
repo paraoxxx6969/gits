@@ -115,6 +115,12 @@ const DEFAULT_EVENTS: ClubEvent[] = [
       { time: 'Day 3 - 10:00 AM', title: 'Final Demos & Award Ceremony', description: 'Top 10 teams pitch live to jury panel.' }
     ],
     organizer: 'GITS Executive Board & Technical Wing',
+    feedbackEnabled: true,
+    feedbackQuestions: [
+      { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+      { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+      { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+    ],
     createdAt: new Date().toISOString()
   },
   {
@@ -146,6 +152,12 @@ const DEFAULT_EVENTS: ClubEvent[] = [
       { time: '04:45 PM', title: 'Model Evaluation & Local API Deployment' }
     ],
     organizer: 'GITS AI/ML Domain',
+    feedbackEnabled: true,
+    feedbackQuestions: [
+      { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+      { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+      { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+    ],
     createdAt: new Date().toISOString()
   },
   {
@@ -177,6 +189,12 @@ const DEFAULT_EVENTS: ClubEvent[] = [
       { time: '07:30 PM', title: 'Flag Submission Deadline & Walkthrough Discussions' }
     ],
     organizer: 'GITS CyberSec Division',
+    feedbackEnabled: true,
+    feedbackQuestions: [
+      { id: 'q1', questionText: 'How would you rate the quality & organization of this event?', type: 'rating' },
+      { id: 'q2', questionText: 'What was your key technical takeaway or favorite part?', type: 'text' },
+      { id: 'q3', questionText: 'Any suggestions for future GITS workshops or hackathons?', type: 'text' }
+    ],
     createdAt: new Date().toISOString()
   }
 ];
