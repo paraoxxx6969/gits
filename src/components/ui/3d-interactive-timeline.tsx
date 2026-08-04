@@ -53,38 +53,36 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
   mousePosition,
   showImages,
 }) => {
-  const [ref, inView] = useInView({ threshold: 0.15, triggerOnce: false });
+  // triggerOnce: true ensures 60fps smooth scrolling without layout thrashes or lag spikes
+  const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: true });
   const controls = useAnimation();
-  const isLeft = index % 2 === 0; // Even index -> Left column on desktop, Odd index -> Right column on desktop
+  const isLeft = index % 2 === 0;
   const meta = CATEGORY_META[event.category || ''] || CATEGORY_META['default'];
   const isActive = activeEvent === event.id;
 
   useEffect(() => {
     if (inView) {
       controls.start('visible');
-    } else {
-      controls.start('hidden');
     }
   }, [controls, inView]);
 
   return (
     <div
       ref={ref}
-      className="relative mb-14 md:mb-20 grid grid-cols-1 md:grid-cols-2 w-full items-start"
+      className="relative mb-12 md:mb-16 grid grid-cols-1 md:grid-cols-2 w-full items-start"
     >
-      {/* Center Node Icon Dot with blur-to-crisp reveal */}
+      {/* Center Node Icon Dot */}
       <div className="absolute top-6 left-5 md:left-1/2 -translate-x-1/2 z-20">
         <motion.div
           className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border-4 cursor-pointer select-none"
           initial="hidden"
           animate={controls}
           variants={{
-            hidden: { scale: 0.4, opacity: 0, filter: 'blur(8px)' },
+            hidden: { scale: 0.5, opacity: 0 },
             visible: {
               scale: 1,
               opacity: 1,
-              filter: 'blur(0px)',
-              transition: { duration: 0.5, ease: 'easeOut', delay: 0.1 },
+              transition: { duration: 0.4, ease: 'easeOut' },
             },
           }}
           style={{
@@ -92,16 +90,17 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
             borderColor: '#080c14',
             boxShadow: isActive ? `0 0 28px ${meta.glowColor}` : `0 0 14px ${meta.glowColor}`,
             color: '#080c14',
-            fontWeight: 800
+            fontWeight: 800,
+            willChange: 'transform, opacity',
           }}
-          whileHover={{ scale: 1.25 }}
+          whileHover={{ scale: 1.2 }}
           onClick={() => setActiveEvent(isActive ? null : event.id)}
         >
           {event.icon ?? meta.icon}
         </motion.div>
       </div>
 
-      {/* Content Card Positioned in Column 1 (Left) or Column 2 (Right) on Desktop */}
+      {/* Content Card */}
       <div
         className={`w-full ${
           isLeft
@@ -116,26 +115,24 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
           variants={{
             hidden: {
               opacity: 0,
-              filter: 'blur(12px)',
-              scale: 0.92,
-              x: isLeft ? -70 : 70,
-              y: 35
+              scale: 0.95,
+              x: isLeft ? -40 : 40,
+              y: 20
             },
             visible: {
               opacity: 1,
-              filter: 'blur(0px)',
               scale: 1,
               x: 0,
               y: 0,
               transition: {
-                duration: 0.75,
-                ease: [0.25, 0.1, 0.25, 1.0], // smooth cubic bezier transition
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1], // Ultra-fast hardware accelerated spring cubic-bezier
               },
             },
           }}
           style={{
             background: 'rgba(15, 23, 42, 0.85)',
-            backdropFilter: 'blur(16px)',
+            backdropFilter: 'blur(12px)',
             borderColor: isActive ? meta.color : 'rgba(255, 255, 255, 0.12)',
             boxShadow: isActive
               ? `0 12px 40px -10px ${meta.glowColor}, 0 0 0 1px ${meta.color}`
@@ -144,7 +141,8 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
             transform: isActive
               ? `perspective(1000px) rotateY(${mousePosition.x * (isLeft ? 3 : -3)}deg) rotateX(${mousePosition.y * -3}deg)`
               : 'perspective(1000px) rotateY(0deg) rotateX(0deg)',
-            transition: 'border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease-out',
+            willChange: 'transform, opacity',
+            transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease-out',
           }}
           onMouseEnter={() => setActiveEvent(event.id)}
           onMouseLeave={() => setActiveEvent(null)}
@@ -155,7 +153,8 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
               <img
                 src={event.image}
                 alt={event.title}
-                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-transparent" />
               
@@ -251,7 +250,7 @@ const TimelineCard: React.FC<TimelineCardProps> = ({
             style={{ background: meta.color }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: isActive ? 1 : 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           />
         </motion.div>
       </div>
@@ -271,12 +270,12 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
   // Scroll Progress Animation for vertical beam line
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start 70%", "end 30%"]
+    offset: ["start 80%", "end 20%"]
   });
 
   const scaleY = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
+    stiffness: 280,
+    damping: 32,
     restDelta: 0.001
   });
 
@@ -308,13 +307,14 @@ export const Timeline3D: React.FC<Timeline3DProps> = ({
           style={{ background: 'rgba(255, 255, 255, 0.3)' }}
         />
 
-        {/* Animated Phase Travel Beam Line (Glows & fills down from 1st phase to 2nd phase as you scroll) */}
+        {/* Animated Phase Travel Beam Line */}
         <motion.div
           className="absolute left-5 md:left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full z-0 pointer-events-none origin-top"
           style={{
             scaleY,
             background: 'linear-gradient(to bottom, #f59e0b 0%, #7928ca 40%, #00f2fe 70%, #10b981 100%)',
-            boxShadow: '0 0 18px rgba(0, 242, 254, 0.8), 0 0 30px rgba(121, 40, 202, 0.6)',
+            boxShadow: '0 0 16px rgba(0, 242, 254, 0.8)',
+            willChange: 'transform',
           }}
         />
 
