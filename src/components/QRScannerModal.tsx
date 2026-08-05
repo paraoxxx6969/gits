@@ -1,8 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera, CheckCircle2, AlertTriangle, RefreshCw, Search, Volume2, VolumeX } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { X, Camera, CheckCircle, AlertTriangle, XCircle, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { EventRegistration, ClubEvent } from '../types';
+
+/* ── BarcodeDetector type (not yet in TypeScript lib) ── */
+declare class BarcodeDetector {
+  constructor(options?: { formats: string[] });
+  detect(image: ImageBitmapSource | HTMLVideoElement): Promise<{ rawValue: string; format: string }[]>;
+  static getSupportedFormats(): Promise<string[]>;
+}
 
 interface QRScannerModalProps {
   isOpen: boolean;
@@ -12,400 +18,481 @@ interface QRScannerModalProps {
   onMarkAttendance: (registrationId: string) => void;
 }
 
+type ScanResult =
+  | { type: 'success'; studentName: string; eventTitle: string; rollNo: string; regId: string }
+  | { type: 'already'; studentName: string; eventTitle: string }
+  | { type: 'notfound'; code: string }
+  | null;
+
+/* ── Audio helpers ─────────────────────────────────────── */
+function playTone(freq: number, duration: number, type: OscillatorType = 'sine') {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+    osc.onended = () => ctx.close();
+  } catch { /* ignore */ }
+}
+
+const playChime = (kind: 'success' | 'warn' | 'error') => {
+  if (kind === 'success') { playTone(880, 0.15); setTimeout(() => playTone(1320, 0.25), 120); }
+  else if (kind === 'warn')  { playTone(660, 0.3, 'triangle'); }
+  else                       { playTone(220, 0.4, 'sawtooth'); }
+};
+
+/* ── Main component ────────────────────────────────────── */
 export const QRScannerModal: React.FC<QRScannerModalProps> = ({
-  isOpen,
-  onClose,
-  registrations,
-  events,
-  onMarkAttendance
+  isOpen, onClose, registrations, events, onMarkAttendance,
 }) => {
-  const [scannerActive, setScannerActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [lastScannedResult, setLastScannedResult] = useState<{
-    status: 'success' | 'already' | 'error';
-    message: string;
-    studentName?: string;
-    rollNo?: string;
-    eventTitle?: string;
-    ticketCode?: string;
-  } | null>(null);
+  const videoRef      = useRef<HTMLVideoElement>(null);
+  const streamRef     = useRef<MediaStream | null>(null);
+  const rafRef        = useRef<number | null>(null);
+  const detectorRef   = useRef<BarcodeDetector | null>(null);
+  const lastCodeRef   = useRef<string>('');
+  const cooldownRef   = useRef<boolean>(false);
 
-  const [manualTicketInput, setManualTicketInput] = useState('');
+  const [scanResult, setScanResult]     = useState<ScanResult>(null);
+  const [cameraError, setCameraError]   = useState<string | null>(null);
+  const [loading, setLoading]           = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [manualCode, setManualCode]     = useState('');
+  const [scanCount, setScanCount]       = useState(0);
 
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
-  const scannerContainerId = 'qr-reader-viewport';
+  /* ── Fully stop camera stream ────────────────────────── */
+  const stopStream = useCallback(() => {
+    // Cancel any pending animation frame
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    // Stop every camera track
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    // Detach from video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
 
-  // Play audio chime feedback
-  const playChime = (type: 'success' | 'warning' | 'error') => {
-    if (!soundEnabled) return;
+  /* ── Process a decoded ticket code ──────────────────── */
+  const processCode = useCallback((raw: string) => {
+    if (cooldownRef.current) return;
+    cooldownRef.current = true;
+    setTimeout(() => { cooldownRef.current = false; }, 2500);
+
+    let code = raw.trim();
+    // Strip JSON wrapper if present: {"ticketCode":"GITS-XXXX",...}
     try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const parsed = JSON.parse(code);
+      if (parsed?.ticketCode) code = parsed.ticketCode;
+    } catch { /* plain text code */ }
 
-      if (type === 'success') {
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.3);
-      } else if (type === 'warning') {
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        osc.frequency.setValueAtTime(349.23, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.35);
-      } else {
-        osc.frequency.setValueAtTime(220, ctx.currentTime);
-        gain.gain.setValueAtTime(0.25, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.25);
-      }
-    } catch {
-      // Audio context fallbacks ignored safely
-    }
-  };
-
-  // Helper to extract ticketCode from QR payload text/url
-  const extractTicketCode = (rawText: string): string => {
-    const trimmed = rawText.trim();
-    if (trimmed.includes('ticket=')) {
-      try {
-        const url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
-        const code = url.searchParams.get('ticket');
-        if (code) return code.trim();
-      } catch {
-        const match = trimmed.match(/ticket=([A-Za-z0-9-]+)/);
-        if (match && match[1]) return match[1].trim();
-      }
-    }
-    return trimmed;
-  };
-
-  // Process a scanned or typed ticket code
-  const processTicketCode = (rawText: string) => {
-    const ticketCode = extractTicketCode(rawText);
-    if (!ticketCode) return;
-
-    // Find registration by ticketCode or ID
-    const reg = registrations.find(r => 
-      r.ticketCode.toUpperCase() === ticketCode.toUpperCase() ||
-      r.id === ticketCode ||
-      r.rollNo.toUpperCase() === ticketCode.toUpperCase()
+    const reg = registrations.find(
+      r => r.ticketCode === code || r.rollNo === code
     );
 
     if (!reg) {
-      setLastScannedResult({
-        status: 'error',
-        message: `No registration found for ticket code: "${ticketCode}"`,
-      });
-      playChime('error');
+      if (soundEnabled) playChime('error');
+      setScanResult({ type: 'notfound', code });
       return;
     }
 
     const event = events.find(e => e.id === reg.eventId);
-    const eventTitle = event ? event.title : 'GITS Event';
+    const eventTitle = event?.title ?? 'Unknown Event';
 
     if (reg.status === 'Attended') {
-      setLastScannedResult({
-        status: 'already',
-        message: 'Student has already been marked ATTENDED for this event.',
-        studentName: reg.studentName,
-        rollNo: reg.rollNo,
-        eventTitle,
-        ticketCode: reg.ticketCode,
-      });
-      playChime('warning');
+      if (soundEnabled) playChime('warn');
+      setScanResult({ type: 'already', studentName: reg.studentName, eventTitle });
       return;
     }
 
-    // Mark as Attended
+    // Mark as attended
     onMarkAttendance(reg.id);
-
-    setLastScannedResult({
-      status: 'success',
-      message: 'Attendance successfully marked & verified!',
+    setScanCount(c => c + 1);
+    if (soundEnabled) playChime('success');
+    confetti({ particleCount: 55, spread: 65, origin: { y: 0.6 } });
+    setScanResult({
+      type: 'success',
       studentName: reg.studentName,
-      rollNo: reg.rollNo,
       eventTitle,
-      ticketCode: reg.ticketCode,
+      rollNo: reg.rollNo,
+      regId: reg.id,
     });
+  }, [registrations, events, onMarkAttendance, soundEnabled]);
 
-    playChime('success');
-
-    // Confetti celebration burst
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.6 }
-    });
-  };
-
-  // Start Camera QR Scanner
-  const startCamera = async () => {
-    setCameraError(null);
+  /* ── BarcodeDetector scan loop ───────────────────────── */
+  const scanFrame = useCallback(async () => {
+    const video = videoRef.current;
+    const detector = detectorRef.current;
+    if (!video || !detector || video.readyState < 2) {
+      rafRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
     try {
-      if (html5QrcodeRef.current) {
-        await html5QrcodeRef.current.stop().catch(() => {});
+      const barcodes = await detector.detect(video);
+      if (barcodes.length > 0) {
+        const value = barcodes[0].rawValue;
+        if (value && value !== lastCodeRef.current) {
+          lastCodeRef.current = value;
+          processCode(value);
+          setTimeout(() => { lastCodeRef.current = ''; }, 3000);
+        }
+      }
+    } catch { /* ignore frame errors */ }
+    rafRef.current = requestAnimationFrame(scanFrame);
+  }, [processCode]);
+
+  /* ── Start camera ────────────────────────────────────── */
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    setLoading(true);
+    try {
+      // Build BarcodeDetector
+      if ('BarcodeDetector' in window) {
+        detectorRef.current = new BarcodeDetector({ formats: ['qr_code'] });
+      } else {
+        setCameraError('Your browser does not support the built-in barcode scanner. Please use the manual entry below.');
+        setLoading(false);
+        return;
       }
 
-      const html5Qrcode = new Html5Qrcode(scannerContainerId);
-      html5QrcodeRef.current = html5Qrcode;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
 
-      await html5Qrcode.start(
-        { facingMode: 'environment' }, // Prefer rear camera on mobile phones
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          processTicketCode(decodedText);
-        },
-        () => {
-          // Ignore frame decode misses
-        }
-      );
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
 
-      setScannerActive(true);
+      setLoading(false);
+      rafRef.current = requestAnimationFrame(scanFrame);
     } catch (err) {
-      console.error('Camera initialization error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions or enter ticket code manually.');
-      setScannerActive(false);
+      console.error('Camera error:', err);
+      setCameraError('Unable to access camera. Please allow camera permission in your browser settings, or use the manual entry below.');
+      setLoading(false);
     }
-  };
+  }, [scanFrame]);
 
-  // Stop camera stream fully (async-safe)
-  const stopCamera = async () => {
-    if (html5QrcodeRef.current) {
-      try {
-        const state = html5QrcodeRef.current.getState();
-        // State 2 = SCANNING, only stop if actively scanning
-        if (state === 2) {
-          await html5QrcodeRef.current.stop();
-        }
-        html5QrcodeRef.current.clear();
-      } catch {
-        // Ignore errors from already-stopped or unmounted scanner
-      } finally {
-        html5QrcodeRef.current = null;
-        setScannerActive(false);
-      }
-    }
-  };
-
-  // Handle close: stop camera first, THEN close modal
-  const handleClose = async () => {
-    await stopCamera();
-    setLastScannedResult(null);
-    onClose();
-  };
-
+  /* ── Lifecycle ───────────────────────────────────────── */
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => {
-        startCamera();
-      }, 350);
-      return () => {
-        clearTimeout(timer);
-        // Best-effort stop on unmount
-        if (html5QrcodeRef.current) {
-          html5QrcodeRef.current.stop().catch(() => {});
-          html5QrcodeRef.current = null;
-        }
-      };
+      setScanResult(null);
+      setManualCode('');
+      lastCodeRef.current = '';
+      cooldownRef.current = false;
+      const t = setTimeout(startCamera, 300);
+      return () => clearTimeout(t);
+    } else {
+      stopStream();
     }
-  }, [isOpen]);
+  }, [isOpen, startCamera, stopStream]);
+
+  // Safety: also stop on unmount
+  useEffect(() => () => stopStream(), [stopStream]);
+
+  /* ── Close handler: stop THEN close ─────────────────── */
+  const handleClose = useCallback(() => {
+    stopStream();
+    setScanResult(null);
+    setManualCode('');
+    onClose();
+  }, [stopStream, onClose]);
+
+  /* ── Manual entry ────────────────────────────────────── */
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualCode.trim()) {
+      processCode(manualCode.trim());
+      setManualCode('');
+    }
+  };
 
   if (!isOpen) return null;
+
+  /* ── Result banner colors ────────────────────────────── */
+  const bannerColors = {
+    success: { bg: 'rgba(16,185,129,0.15)', border: '#10b981', icon: <CheckCircle size={22} color="#10b981" /> },
+    already: { bg: 'rgba(245,158,11,0.15)', border: '#f59e0b', icon: <AlertTriangle size={22} color="#f59e0b" /> },
+    notfound: { bg: 'rgba(239,68,68,0.15)', border: '#ef4444', icon: <XCircle size={22} color="#ef4444" /> },
+  };
+  const banner = scanResult ? bannerColors[scanResult.type] : null;
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        background: 'rgba(8, 12, 20, 0.88)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(8,12,20,0.88)',
+        backdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '1rem',
       }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div
-        className="glass-card"
         style={{
-          width: '100%',
-          maxWidth: '560px',
+          background: 'linear-gradient(145deg, #0f1929 0%, #0d1b2a 100%)',
+          border: '1px solid rgba(0,242,254,0.2)',
           borderRadius: '20px',
-          border: '1px solid rgba(0, 242, 254, 0.3)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 242, 254, 0.2)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
+          width: '100%',
+          maxWidth: '440px',
           maxHeight: '90vh',
+          overflowY: 'auto',
+          boxShadow: '0 0 60px rgba(0,242,254,0.12)',
         }}
       >
-        {/* Modal Header */}
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.6)' }}>
+        {/* ── Header ── */}
+        <div style={{
+          padding: '1rem 1.25rem',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(15,23,42,0.6)',
+          borderRadius: '20px 20px 0 0',
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(0, 242, 254, 0.15)', border: '1px solid rgba(0, 242, 254, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={20} color="#00f2fe" style={{ margin: 'auto' }} />
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'rgba(0,242,254,0.15)', border: '1px solid rgba(0,242,254,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Camera size={20} color="#00f2fe" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Live QR Attendance Scanner</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Scan student digital pass to mark attendance</p>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#fff' }}>QR Attendance Scanner</div>
+              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+                Scanned today: <strong style={{ color: '#00f2fe' }}>{scanCount}</strong>
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              title={soundEnabled ? 'Mute Chime' : 'Unmute Chime'}
-              style={{ background: 'transparent', border: 'none', color: soundEnabled ? '#00f2fe' : 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}
+              onClick={() => setSoundEnabled(s => !s)}
+              title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+              style={{
+                background: 'rgba(255,255,255,0.07)', border: 'none', color: '#aaa',
+                width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
-
             <button
               onClick={handleClose}
-              style={{ background: 'rgba(255, 255, 255, 0.08)', border: 'none', color: '#fff', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                background: 'rgba(255,255,255,0.07)', border: 'none', color: '#fff',
+                width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
               <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* ── Body ── */}
+        <div style={{ padding: '1.25rem' }}>
 
-          {/* Camera Viewfinder Box */}
-          <div style={{ position: 'relative', width: '100%', minHeight: '260px', background: '#000', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(0, 242, 254, 0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div id={scannerContainerId} style={{ width: '100%', height: '100%' }} />
+          {/* Viewfinder */}
+          <div style={{
+            position: 'relative', borderRadius: 14, overflow: 'hidden',
+            background: '#000', aspectRatio: '4/3',
+            border: '2px solid rgba(0,242,254,0.25)',
+            marginBottom: '1rem',
+          }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
 
-            {!scannerActive && !cameraError && (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 0.75rem auto', color: '#00f2fe' }} />
-                <p style={{ fontSize: '0.85rem' }}>Starting Camera Viewfinder...</p>
+            {/* Corner brackets */}
+            {[
+              { top: 10, left: 10, borderTop: '3px solid #00f2fe', borderLeft: '3px solid #00f2fe' },
+              { top: 10, right: 10, borderTop: '3px solid #00f2fe', borderRight: '3px solid #00f2fe' },
+              { bottom: 10, left: 10, borderBottom: '3px solid #00f2fe', borderLeft: '3px solid #00f2fe' },
+              { bottom: 10, right: 10, borderBottom: '3px solid #00f2fe', borderRight: '3px solid #00f2fe' },
+            ].map((style, i) => (
+              <div key={i} style={{ position: 'absolute', width: 24, height: 24, borderRadius: 2, ...style }} />
+            ))}
+
+            {/* Scan line animation */}
+            {!loading && !cameraError && (
+              <div style={{
+                position: 'absolute', left: 0, right: 0, height: 2,
+                background: 'linear-gradient(90deg, transparent, #00f2fe, transparent)',
+                animation: 'qrScanLine 2s linear infinite',
+              }} />
+            )}
+
+            {/* Loading overlay */}
+            {loading && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 10,
+                background: 'rgba(0,0,0,0.75)',
+              }}>
+                <Loader2 size={32} color="#00f2fe" style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ color: '#00f2fe', fontSize: '0.85rem' }}>Starting camera…</span>
               </div>
             )}
 
+            {/* Error overlay */}
             {cameraError && (
-              <div style={{ padding: '1.5rem', textAlign: 'center', color: '#f87171', fontSize: '0.85rem', maxWidth: '360px' }}>
-                <AlertTriangle size={32} style={{ margin: '0 auto 0.75rem auto', color: '#ef4444' }} />
-                <p style={{ marginBottom: '1rem', lineHeight: 1.5 }}>{cameraError}</p>
-                <button className="btn btn-secondary btn-sm" onClick={startCamera}>
-                  Retry Camera Permission
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 8, padding: '1rem',
+                background: 'rgba(0,0,0,0.85)', textAlign: 'center',
+              }}>
+                <XCircle size={36} color="#ef4444" />
+                <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{cameraError}</span>
+                <button
+                  onClick={startCamera}
+                  style={{
+                    marginTop: 8, padding: '6px 16px', borderRadius: 8,
+                    background: 'rgba(0,242,254,0.15)', border: '1px solid #00f2fe',
+                    color: '#00f2fe', fontSize: '0.8rem', cursor: 'pointer',
+                  }}
+                >
+                  Retry Camera
                 </button>
               </div>
             )}
           </div>
 
-          {/* Scan Feedback Banner */}
-          {lastScannedResult && (
-            <div
-              style={{
-                padding: '1rem 1.25rem',
-                borderRadius: '12px',
-                background: lastScannedResult.status === 'success'
-                  ? 'rgba(16, 185, 129, 0.15)'
-                  : lastScannedResult.status === 'already'
-                  ? 'rgba(245, 158, 11, 0.15)'
-                  : 'rgba(239, 68, 68, 0.15)',
-                border: `1px solid ${
-                  lastScannedResult.status === 'success'
-                    ? 'rgba(16, 185, 129, 0.4)'
-                    : lastScannedResult.status === 'already'
-                    ? 'rgba(245, 158, 11, 0.4)'
-                    : 'rgba(239, 68, 68, 0.4)'
-                }`,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-              }}
-            >
-              {lastScannedResult.status === 'success' && <CheckCircle2 size={24} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />}
-              {lastScannedResult.status === 'already' && <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />}
-              {lastScannedResult.status === 'error' && <AlertTriangle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />}
-
+          {/* Scan result banner */}
+          {scanResult && banner && (
+            <div style={{
+              borderRadius: 12, padding: '0.85rem 1rem',
+              background: banner.bg, border: `1px solid ${banner.border}`,
+              display: 'flex', gap: 10, alignItems: 'flex-start',
+              marginBottom: '1rem', animation: 'fadeInUp 0.3s ease',
+            }}>
+              {banner.icon}
               <div style={{ flex: 1 }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.25rem 0', color: lastScannedResult.status === 'success' ? '#10b981' : lastScannedResult.status === 'already' ? '#f59e0b' : '#ef4444' }}>
-                  {lastScannedResult.status === 'success' ? '✓ ATTENDANCE MARKED' : lastScannedResult.status === 'already' ? '⚠️ ALREADY ATTENDED' : '❌ INVALID TICKET'}
-                </h4>
-
-                {lastScannedResult.studentName && (
-                  <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f4f1fb', margin: '0 0 0.2rem 0' }}>
-                    {lastScannedResult.studentName} ({lastScannedResult.rollNo})
-                  </p>
+                {scanResult.type === 'success' && (
+                  <>
+                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: '0.9rem' }}>✅ Marked Attended</div>
+                    <div style={{ color: '#d1fae5', fontSize: '0.82rem', marginTop: 2 }}>
+                      {scanResult.studentName} · {scanResult.rollNo}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{scanResult.eventTitle}</div>
+                  </>
                 )}
-
-                {lastScannedResult.eventTitle && (
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-                    Event: <strong>{lastScannedResult.eventTitle}</strong> · Ticket: <code style={{ color: '#00f2fe' }}>{lastScannedResult.ticketCode}</code>
-                  </p>
+                {scanResult.type === 'already' && (
+                  <>
+                    <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>⚠️ Already Attended</div>
+                    <div style={{ color: '#fde68a', fontSize: '0.82rem', marginTop: 2 }}>{scanResult.studentName}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{scanResult.eventTitle}</div>
+                  </>
                 )}
-
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.3rem 0 0 0' }}>
-                  {lastScannedResult.message}
-                </p>
+                {scanResult.type === 'notfound' && (
+                  <>
+                    <div style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem' }}>❌ Not Found</div>
+                    <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: 2 }}>
+                      No registration matched: <code style={{ fontSize: '0.72rem' }}>{scanResult.code}</code>
+                    </div>
+                  </>
+                )}
               </div>
+              <button
+                onClick={() => setScanResult(null)}
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 0 }}
+              >
+                <X size={14} />
+              </button>
             </div>
           )}
 
-          {/* Manual Input Search Fallback */}
-          <div style={{ paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-              Manual Ticket Code / Roll Number Entry:
-            </label>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                processTicketCode(manualTicketInput);
-                setManualTicketInput('');
-              }}
-              style={{ display: 'flex', gap: '0.5rem' }}
-            >
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="text"
-                  placeholder="Paste Ticket Code (e.g. GITS-PASS-1234 or Roll No)"
-                  value={manualTicketInput}
-                  onChange={(e) => setManualTicketInput(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem 0.6rem 2.2rem',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontSize: '0.85rem',
-                  }}
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-sm" disabled={!manualTicketInput.trim()}>
-                Verify &amp; Mark
+          {/* Manual entry */}
+          <div style={{
+            borderRadius: 12, padding: '0.85rem',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>
+              Manual Entry — paste ticket code or roll number
+            </div>
+            <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={manualCode}
+                onChange={e => setManualCode(e.target.value)}
+                placeholder="e.g. GITS-ABC123"
+                style={{
+                  flex: 1, background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 8, padding: '7px 10px',
+                  color: '#fff', fontSize: '0.85rem', outline: 'none',
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: '7px 14px', borderRadius: 8,
+                  background: 'linear-gradient(135deg,#00f2fe,#4facfe)',
+                  border: 'none', color: '#000', fontWeight: 700,
+                  fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                Check
               </button>
             </form>
           </div>
-
         </div>
 
-        {/* Modal Footer */}
-        <div style={{ padding: '0.85rem 1.25rem', background: 'rgba(15, 23, 42, 0.8)', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-secondary btn-sm" onClick={handleClose}>
+        {/* ── Footer ── */}
+        <div style={{
+          padding: '0.75rem 1.25rem',
+          background: 'rgba(15,23,42,0.6)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '0 0 20px 20px',
+          display: 'flex', justifyContent: 'flex-end',
+        }}>
+          <button
+            onClick={handleClose}
+            style={{
+              padding: '8px 20px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: '#fff', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600,
+            }}
+          >
             Done Scanning
           </button>
         </div>
       </div>
+
+      {/* Keyframe styles */}
+      <style>{`
+        @keyframes qrScanLine {
+          0% { top: 15%; }
+          50% { top: 80%; }
+          100% { top: 15%; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
+
+export default QRScannerModal;
