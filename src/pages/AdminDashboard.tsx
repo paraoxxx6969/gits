@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { ClubEvent, EventRegistration, EventMemory, Announcement, EventCategory, EventStatus, GalleryPhoto, CrewMember, EventFeedbackResponse, FeedbackQuestion } from '../types';
 import { StorageService } from '../services/storageService';
 import { subscribeToGalleryPhotos, subscribeToFeedback } from '../services/firebase';
+import { QRScannerModal } from '../components/QRScannerModal';
 import { 
   ShieldCheck, Calendar, Camera, Bell, Plus, Edit3, Trash2, 
   Search, Download, X, Globe, Upload, Image as ImageIcon, Users, UserCheck, MessageSquare, Star, Settings, ChevronUp, ChevronDown, Check
@@ -25,6 +26,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRefreshData
 }) => {
   const [activeTab, setActiveTab] = useState<'events' | 'memories' | 'announcements' | 'gallery' | 'registrations' | 'crew' | 'feedback'>('events');
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
   // Gallery Photos & Feedback State
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(() => StorageService.getGalleryPhotos());
@@ -938,9 +940,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </select>
               </div>
 
-              <button className="btn btn-primary btn-sm" onClick={handleExportCSV}>
-                <Download size={16} /> Export CSV List
-              </button>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <button 
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsQRScannerOpen(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(0, 242, 254, 0.4)', color: '#00f2fe' }}
+                >
+                  <Camera size={16} color="#00f2fe" /> Scan Ticket QR
+                </button>
+
+                <button className="btn btn-primary btn-sm" onClick={handleExportCSV}>
+                  <Download size={16} /> Export CSV List
+                </button>
+              </div>
             </div>
 
             <div className="glass-card" style={{ overflowX: 'auto' }}>
@@ -2231,6 +2243,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Live QR Attendance Scanner Modal */}
+      <QRScannerModal
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+        registrations={registrations}
+        events={events}
+        onMarkAttendance={(regId) => {
+          handleUpdateRegStatus(regId, 'Attended');
+          onRefreshData();
+        }}
+      />
 
       </div>
     </div>
