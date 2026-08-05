@@ -455,11 +455,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const rows = targetRegistrations.map(r => {
       const teammateStr = r.teamMembers && r.teamMembers.length > 0
-        ? r.teamMembers.map((m, idx) => `Member ${idx + 2}: ${m.name}${m.rollNo ? ` (Roll: ${m.rollNo})` : ''}${m.email ? ` (Email: ${m.email})` : ''}`).join(' | ')
+        ? r.teamMembers.map((m, idx) => `Member ${idx + 2}: ${m.name}${m.rollNo ? ` (Roll: ${m.rollNo})` : ''}${m.email ? ` (Email: ${m.email})` : ''}`).join('\n')
         : '';
 
       const allMembersFormatted = r.teamName
-        ? `Leader (Member 1): ${r.studentName} (Roll: ${r.rollNo})${teammateStr ? ' | ' + teammateStr : ''}`
+        ? `Leader (Member 1): ${r.studentName} (Roll: ${r.rollNo})${teammateStr ? '\n' + teammateStr : ''}`
         : 'Solo Registration';
 
       return [
