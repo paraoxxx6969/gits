@@ -288,41 +288,13 @@
 }
 
 .members-page .m-t-card {
-  aspect-ratio: 3 / 4;
-  border-radius: 22px;
-  overflow: hidden;
-  background: linear-gradient(
-    180deg,
-    var(--m-purple-1) 0%,
-    var(--m-cyan-1) 40%,
-    var(--m-cyan-2) 75%,
-    var(--m-purple-4) 100%
-  );
+  /* Wrapper only — the CardFlip component handles its own styling */
   position: relative;
-  box-shadow:
-    0 24px 40px -16px rgba(121, 40, 202, 0.4),
-    0 10px 22px -6px rgba(0, 180, 216, 0.22),
-    inset 0 2px 0 rgba(200, 220, 255, 0.35),
-    inset 0 -3px 6px rgba(60, 0, 120, 0.3);
-  cursor: pointer;
-  transition: transform 0.5s cubic-bezier(0.6, 0, 0.2, 1), box-shadow 0.5s;
-}
-.members-page .m-t-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    transparent 30%,
-    transparent 70%,
-    rgba(60, 0, 120, 0.2) 100%
-  );
-  pointer-events: none;
-  z-index: 2;
-}
-.members-page .m-t-card:hover {
-  transform: translateY(-10px) rotate(-1deg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  overflow: visible;
 }
 .members-page .m-t-card img {
   width: 100%;
@@ -440,12 +412,7 @@
     gap: 14px;
   }
 
-  .members-page .m-t-card {
-    aspect-ratio: 3 / 4;
-    border-radius: 14px;
-  }
-
-  /* Always display member name/role on mobile (no hover on touch) */
+/* Always display member name/role on mobile (no hover on touch) */
   .members-page .m-t-meta {
     opacity: 1;
     transform: translateY(0);
