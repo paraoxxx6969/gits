@@ -52,18 +52,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Team event state — must be declared before any early return (Rules of Hooks)
+  const [teamName, setTeamName] = useState('');
+  const [teammates, setTeammates] = useState<{ name: string; rollNo: string; email: string }[]>([{ name: '', rollNo: '', email: '' }]);
+
   if (!event) return null;
 
   const isInterCollege = event.eventScope === 'Inter-College';
   const isTeamEvent = event.eventType === 'Team';
   const minTeamSize = event.minTeamSize || 2;
   const maxTeamSize = event.maxTeamSize || 4;
-
-  const [teamName, setTeamName] = useState('');
-  const [teammates, setTeammates] = useState<{ name: string; rollNo: string; email: string }[]>(() => {
-    const initialCount = Math.max(1, minTeamSize - 1);
-    return Array.from({ length: initialCount }, () => ({ name: '', rollNo: '', email: '' }));
-  });
 
   const handleAddTeammate = () => {
     if (teammates.length + 1 < maxTeamSize) {
