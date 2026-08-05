@@ -58,6 +58,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const detectorRef   = useRef<BarcodeDetector | null>(null);
   const lastCodeRef   = useRef<string>('');
   const cooldownRef   = useRef<boolean>(false);
+  const isAlive       = useRef<boolean>(false); // guards async scan loop
 
   const [scanResult, setScanResult]     = useState<ScanResult>(null);
   const [cameraError, setCameraError]   = useState<string | null>(null);
@@ -66,20 +67,23 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [manualCode, setManualCode]     = useState('');
   const [scanCount, setScanCount]       = useState(0);
 
-  /* ── Fully stop camera stream ────────────────────────── */
+  /* ── Fully stop camera stream (synchronous, safe) ─────── */
   const stopStream = useCallback(() => {
-    // Cancel any pending animation frame
+    // Kill the scan loop FIRST — prevents async detect() from re-scheduling RAF
+    isAlive.current = false;
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    // Stop every camera track
+    detectorRef.current = null;
+    // Stop every camera track — releases the camera LED on phone
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    // Detach from video element
+    // Detach video source
     if (videoRef.current) {
+      videoRef.current.pause();
       videoRef.current.srcObject = null;
     }
   }, []);
@@ -132,14 +136,19 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
   /* ── BarcodeDetector scan loop ───────────────────────── */
   const scanFrame = useCallback(async () => {
+    // GUARD: if scanner was stopped, do NOT schedule more frames
+    if (!isAlive.current) return;
+
     const video = videoRef.current;
     const detector = detectorRef.current;
     if (!video || !detector || video.readyState < 2) {
-      rafRef.current = requestAnimationFrame(scanFrame);
+      if (isAlive.current) rafRef.current = requestAnimationFrame(scanFrame);
       return;
     }
     try {
       const barcodes = await detector.detect(video);
+      // Check again AFTER the await — modal may have closed during detection
+      if (!isAlive.current) return;
       if (barcodes.length > 0) {
         const value = barcodes[0].rawValue;
         if (value && value !== lastCodeRef.current) {
@@ -149,13 +158,14 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         }
       }
     } catch { /* ignore frame errors */ }
-    rafRef.current = requestAnimationFrame(scanFrame);
+    if (isAlive.current) rafRef.current = requestAnimationFrame(scanFrame);
   }, [processCode]);
 
   /* ── Start camera ────────────────────────────────────── */
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setLoading(true);
+    isAlive.current = true; // allow scan loop to run
     try {
       // Build BarcodeDetector
       if ('BarcodeDetector' in window) {
@@ -171,6 +181,12 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         audio: false,
       });
 
+      // Check if still alive after the async getUserMedia call
+      if (!isAlive.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -178,7 +194,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       }
 
       setLoading(false);
-      rafRef.current = requestAnimationFrame(scanFrame);
+      if (isAlive.current) rafRef.current = requestAnimationFrame(scanFrame);
     } catch (err) {
       console.error('Camera error:', err);
       setCameraError('Unable to access camera. Please allow camera permission in your browser settings, or use the manual entry below.');
@@ -188,27 +204,25 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
   /* ── Lifecycle ───────────────────────────────────────── */
   useEffect(() => {
-    if (isOpen) {
-      setScanResult(null);
-      setManualCode('');
-      lastCodeRef.current = '';
-      cooldownRef.current = false;
-      const t = setTimeout(startCamera, 300);
-      return () => clearTimeout(t);
-    } else {
-      stopStream();
-    }
-  }, [isOpen, startCamera, stopStream]);
-
-  // Safety: also stop on unmount
-  useEffect(() => () => stopStream(), [stopStream]);
-
-  /* ── Close handler: stop THEN close ─────────────────── */
-  const handleClose = useCallback(() => {
-    stopStream();
+    if (!isOpen) return;
     setScanResult(null);
     setManualCode('');
-    onClose();
+    lastCodeRef.current = '';
+    cooldownRef.current = false;
+    const t = setTimeout(startCamera, 300);
+    // Cleanup: runs when isOpen becomes false OR component unmounts
+    return () => {
+      clearTimeout(t);
+      stopStream();
+    };
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Close handler ───────────────────────────────────── */
+  const handleClose = useCallback(() => {
+    stopStream();          // stop camera synchronously
+    setScanResult(null);  // clear state
+    setManualCode('');
+    onClose();             // close modal — React re-renders immediately
   }, [stopStream, onClose]);
 
   /* ── Manual entry ────────────────────────────────────── */
