@@ -337,7 +337,15 @@ export const StorageService = {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(DEFAULT_EVENTS));
       return DEFAULT_EVENTS;
     }
-    try { return JSON.parse(raw); } catch { return DEFAULT_EVENTS; }
+    try {
+      const parsed = JSON.parse(raw);
+      // If localStorage was overwritten with [] (e.g. by a failed Firestore sync),
+      // fall back to DEFAULT_EVENTS so the student page is never blank
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_EVENTS;
+      }
+      return parsed;
+    } catch { return DEFAULT_EVENTS; }
   },
 
   saveEvents(events: ClubEvent[]) {

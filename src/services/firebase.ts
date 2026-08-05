@@ -353,8 +353,12 @@ export function subscribeToEvents(onUpdate: (events: ClubEvent[]) => void): () =
         snapshot.forEach((docSnap) => {
           events.push(docSnap.data() as ClubEvent);
         });
-        try { localStorage.setItem('gits_club_events_v2', JSON.stringify(events)); } catch (e) { }
-        onUpdate(events);
+        // Only overwrite localStorage and notify if we actually got data
+        // (prevents blank pages when Firestore returns empty due to auth/rules)
+        if (events.length > 0) {
+          try { localStorage.setItem('gits_club_events_v2', JSON.stringify(events)); } catch (e) { }
+          onUpdate(events);
+        }
       }, (err) => console.warn('Events Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing events listener:', err);
@@ -488,8 +492,10 @@ export function subscribeToRegistrations(onUpdate: (regs: any[]) => void): () =>
           regs.push(docSnap.data());
         });
         regs.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
-        try { localStorage.setItem('gits_club_registrations_v2', JSON.stringify(regs)); } catch (e) { }
-        onUpdate(regs);
+        if (regs.length > 0) {
+          try { localStorage.setItem('gits_club_registrations_v2', JSON.stringify(regs)); } catch (e) { }
+          onUpdate(regs);
+        }
       }, (err) => console.warn('Registrations Firestore listener error:', err));
     } catch (err) {
       console.error('Error establishing registrations listener:', err);
