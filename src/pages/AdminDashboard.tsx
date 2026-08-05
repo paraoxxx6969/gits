@@ -433,29 +433,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    const headers = ['Ticket Code', 'Event Title', 'Student Name', 'College / Institution', 'Roll No', 'GR No', 'Email', 'Phone', 'Branch', 'Year', 'Div', 'Status', 'Attendance Status', 'Attended At', 'Registered At'];
-    const rows = targetRegistrations.map(r => [
-      r.ticketCode,
-      `"${r.eventTitle.replace(/"/g, '""')}"`,
-      `"${r.studentName.replace(/"/g, '""')}"`,
-      `"${(r.collegeName || 'Datta Meghe College of Engineering (DMCE)').replace(/"/g, '""')}"`,
-      r.rollNo,
-      r.grNo || 'N/A',
-      r.email,
-      r.phone || 'N/A',
-      `"${r.department.replace(/"/g, '""')}"`,
-      r.year,
-      r.div || 'N/A',
-      r.status,
-      r.status === 'Attended' ? 'ATTENDED' : r.status === 'Absent' ? 'ABSENT' : r.status === 'Cancelled' ? 'CANCELLED' : 'NOT YET',
-      r.attendedAt ? new Date(r.attendedAt).toLocaleString('en-IN') : 'N/A',
-      r.registeredAt
-    ]);
+    const headers = [
+      'Ticket Code',
+      'Event Title',
+      'Team Name',
+      'All Team Members & Details',
+      'Leader / Student Name',
+      'College / Institution',
+      'Roll No',
+      'GR No',
+      'Email',
+      'Phone',
+      'Branch',
+      'Year',
+      'Div',
+      'Status',
+      'Attendance Status',
+      'Attended At',
+      'Registered At'
+    ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const rows = targetRegistrations.map(r => {
+      const teammateStr = r.teamMembers && r.teamMembers.length > 0
+        ? r.teamMembers.map((m, idx) => `Member ${idx + 2}: ${m.name}${m.rollNo ? ` (Roll: ${m.rollNo})` : ''}${m.email ? ` (Email: ${m.email})` : ''}`).join(' | ')
+        : '';
+
+      const allMembersFormatted = r.teamName
+        ? `Leader (Member 1): ${r.studentName} (Roll: ${r.rollNo})${teammateStr ? ' | ' + teammateStr : ''}`
+        : 'Solo Registration';
+
+      return [
+        r.ticketCode,
+        `"${r.eventTitle.replace(/"/g, '""')}"`,
+        `"${(r.teamName || 'N/A').replace(/"/g, '""')}"`,
+        `"${allMembersFormatted.replace(/"/g, '""')}"`,
+        `"${r.studentName.replace(/"/g, '""')}"`,
+        `"${(r.collegeName || 'Datta Meghe College of Engineering (DMCE)').replace(/"/g, '""')}"`,
+        r.rollNo,
+        r.grNo || 'N/A',
+        r.email,
+        r.phone || 'N/A',
+        `"${r.department.replace(/"/g, '""')}"`,
+        r.year,
+        r.div || 'N/A',
+        r.status,
+        r.status === 'Attended' ? 'ATTENDED' : r.status === 'Absent' ? 'ABSENT' : r.status === 'Cancelled' ? 'CANCELLED' : 'NOT YET',
+        r.attendedAt ? new Date(r.attendedAt).toLocaleString('en-IN') : 'N/A',
+        r.registeredAt
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     
     let fileName = `GITS_Registrations_${new Date().toISOString().split('T')[0]}.csv`;
     if (regEventFilter !== 'All') {
@@ -470,6 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleExportFeedbackCSV = () => {
