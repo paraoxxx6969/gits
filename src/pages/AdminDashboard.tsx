@@ -47,6 +47,98 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [questionsForm, setQuestionsForm] = useState<FeedbackQuestion[]>([]);
   const [questionsSaveSuccess, setQuestionsSaveSuccess] = useState(false);
 
+  // Bulk Selection State for Admin Tabs
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [selectedRegIds, setSelectedRegIds] = useState<string[]>([]);
+  const [selectedMemoryIds, setSelectedMemoryIds] = useState<string[]>([]);
+  const [selectedAnnouncementIds, setSelectedAnnouncementIds] = useState<string[]>([]);
+  const [selectedGalleryIds, setSelectedGalleryIds] = useState<string[]>([]);
+  const [selectedCrewIds, setSelectedCrewIds] = useState<string[]>([]);
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<string[]>([]);
+
+  // Selection toggle helpers
+  const toggleSelection = (id: string, list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>) => {
+    if (list.includes(id)) {
+      setList(list.filter(item => item !== id));
+    } else {
+      setList([...list, id]);
+    }
+  };
+
+  const toggleSelectAll = (allIds: string[], currentSelected: string[], setList: React.Dispatch<React.SetStateAction<string[]>>) => {
+    if (currentSelected.length === allIds.length && allIds.length > 0) {
+      setList([]);
+    } else {
+      setList([...allIds]);
+    }
+  };
+
+  // Bulk Delete Handlers
+  const handleBulkDeleteEvents = () => {
+    if (selectedEventIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedEventIds.length} selected event(s)? This will also delete associated registrations.`)) {
+      selectedEventIds.forEach(id => StorageService.deleteEvent(id));
+      setSelectedEventIds([]);
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteRegistrations = () => {
+    if (selectedRegIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedRegIds.length} selected registration(s)?`)) {
+      selectedRegIds.forEach(id => StorageService.deleteRegistration(id));
+      setSelectedRegIds([]);
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteMemories = () => {
+    if (selectedMemoryIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedMemoryIds.length} selected memory post(s)?`)) {
+      selectedMemoryIds.forEach(id => StorageService.deleteMemory(id));
+      setSelectedMemoryIds([]);
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteAnnouncements = () => {
+    if (selectedAnnouncementIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedAnnouncementIds.length} selected announcement(s)?`)) {
+      selectedAnnouncementIds.forEach(id => StorageService.deleteAnnouncement(id));
+      setSelectedAnnouncementIds([]);
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteGalleryPhotos = () => {
+    if (selectedGalleryIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedGalleryIds.length} selected photo(s) from the 3D Globe?`)) {
+      selectedGalleryIds.forEach(id => StorageService.deleteGalleryPhoto(id));
+      setSelectedGalleryIds([]);
+      setGalleryPhotos(StorageService.getGalleryPhotos());
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteCrewMembers = () => {
+    if (selectedCrewIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedCrewIds.length} selected crew member(s)?`)) {
+      selectedCrewIds.forEach(id => StorageService.deleteCrewMember(id));
+      setSelectedCrewIds([]);
+      onRefreshData();
+    }
+  };
+
+  const handleBulkDeleteFeedback = () => {
+    if (selectedFeedbackIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedFeedbackIds.length} selected feedback response(s)?`)) {
+      selectedFeedbackIds.forEach(id => StorageService.deleteFeedbackResponse(id));
+      setSelectedFeedbackIds([]);
+      setFeedbackList(StorageService.getFeedbackResponses());
+      onRefreshData();
+    }
+  };
+
   // Subscribe to Cloud Firestore photos & feedback in Admin Panel
   useEffect(() => {
     const unsubGallery = subscribeToGalleryPhotos((cloudPhotos) => {
@@ -806,17 +898,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* ---------------------------------------------------- */}
         {activeTab === 'events' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
               <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>Events Directory</h3>
-              <button className="btn btn-primary btn-sm" onClick={handleOpenNewEvent}>
-                <Plus size={16} /> Create Event
-              </button>
+              
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                {selectedEventIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteEvents} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedEventIds.length})
+                  </button>
+                )}
+
+                <button className="btn btn-primary btn-sm" onClick={handleOpenNewEvent}>
+                  <Plus size={16} /> Create Event
+                </button>
+              </div>
             </div>
 
             <div className="glass-card" style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '1rem', width: '40px', textAlign: 'center' }}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedEventIds.length === events.length && events.length > 0}
+                        onChange={() => toggleSelectAll(events.map(e => e.id), selectedEventIds, setSelectedEventIds)}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                        title="Select All Events"
+                      />
+                    </th>
                     <th style={{ padding: '1rem' }}>Event Title</th>
                     <th style={{ padding: '1rem' }}>Category</th>
                     <th style={{ padding: '1rem' }}>Status</th>
@@ -827,7 +937,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </thead>
                 <tbody>
                   {events.map((evt) => (
-                    <tr key={evt.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr key={evt.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: selectedEventIds.includes(evt.id) ? 'rgba(239, 68, 68, 0.08)' : undefined }}>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedEventIds.includes(evt.id)}
+                          onChange={() => toggleSelection(evt.id, selectedEventIds, setSelectedEventIds)}
+                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                        />
+                      </td>
                       <td style={{ padding: '1rem', fontWeight: 600, color: '#fff' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <img src={evt.image} alt="" style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover' }} />
@@ -940,7 +1058,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                {selectedRegIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteRegistrations} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedRegIds.length})
+                  </button>
+                )}
+
                 <button 
                   className="btn btn-secondary btn-sm"
                   onClick={() => setIsQRScannerOpen(true)}
@@ -959,6 +1083,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '1rem', width: '40px', textAlign: 'center' }}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedRegIds.length === filteredRegistrations.length && filteredRegistrations.length > 0}
+                        onChange={() => toggleSelectAll(filteredRegistrations.map(r => r.id), selectedRegIds, setSelectedRegIds)}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                        title="Select All Matching Registrations"
+                      />
+                    </th>
                     <th style={{ padding: '1rem' }}>Ticket Code</th>
                     <th style={{ padding: '1rem' }}>Student Name & Email</th>
                     <th style={{ padding: '1rem' }}>Roll & GR No</th>
@@ -971,7 +1104,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tbody>
                   {filteredRegistrations.length > 0 ? (
                     filteredRegistrations.map((reg) => (
-                      <tr key={reg.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <tr key={reg.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: selectedRegIds.includes(reg.id) ? 'rgba(239, 68, 68, 0.08)' : undefined }}>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox"
+                            checked={selectedRegIds.includes(reg.id)}
+                            onChange={() => toggleSelection(reg.id, selectedRegIds, setSelectedRegIds)}
+                            style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                          />
+                        </td>
                         <td style={{ padding: '1rem', fontFamily: 'var(--font-code)', fontWeight: 700, color: '#00f2fe' }}>
                           {reg.ticketCode}
                         </td>
@@ -1052,7 +1193,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                         No registrations matching the search criteria.
                       </td>
                     </tr>
@@ -1068,17 +1209,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* ---------------------------------------------------- */}
         {activeTab === 'memories' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
               <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>Event Memories Timeline Posts</h3>
-              <button className="btn btn-primary btn-sm" onClick={() => setIsMemoryModalOpen(true)}>
-                <Plus size={16} /> Post Memory Highlight
-              </button>
+              
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                {selectedMemoryIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteMemories} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedMemoryIds.length})
+                  </button>
+                )}
+
+                <button className="btn btn-primary btn-sm" onClick={() => setIsMemoryModalOpen(true)}>
+                  <Plus size={16} /> Post Memory Highlight
+                </button>
+              </div>
             </div>
 
             <div className="glass-card" style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '1rem', width: '40px', textAlign: 'center' }}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedMemoryIds.length === memories.length && memories.length > 0}
+                        onChange={() => toggleSelectAll(memories.map(m => m.id), selectedMemoryIds, setSelectedMemoryIds)}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                        title="Select All Memories"
+                      />
+                    </th>
                     <th style={{ padding: '1rem' }}>Title & Year</th>
                     <th style={{ padding: '1rem' }}>Category</th>
                     <th style={{ padding: '1rem' }}>Attendees</th>
@@ -1088,7 +1247,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </thead>
                 <tbody>
                   {memories.map((mem) => (
-                    <tr key={mem.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr key={mem.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: selectedMemoryIds.includes(mem.id) ? 'rgba(239, 68, 68, 0.08)' : undefined }}>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedMemoryIds.includes(mem.id)}
+                          onChange={() => toggleSelection(mem.id, selectedMemoryIds, setSelectedMemoryIds)}
+                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                        />
+                      </td>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ fontWeight: 600, color: '#fff' }}>{mem.title}</div>
                         <div style={{ fontSize: '0.75rem', color: '#00f2fe' }}>Year {mem.year} • {mem.date}</div>
@@ -1159,11 +1326,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Announcements List */}
             <div className="glass-card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '1rem' }}>Active Announcements</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input 
+                    type="checkbox"
+                    checked={selectedAnnouncementIds.length === announcements.length && announcements.length > 0}
+                    onChange={() => toggleSelectAll(announcements.map(a => a.id), selectedAnnouncementIds, setSelectedAnnouncementIds)}
+                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                    title="Select All Announcements"
+                  />
+                  <h3 style={{ fontSize: '1.15rem', color: '#fff', margin: 0 }}>Active Announcements</h3>
+                </div>
+
+                {selectedAnnouncementIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteAnnouncements} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Trash2 size={13} /> Delete ({selectedAnnouncementIds.length})
+                  </button>
+                )}
+              </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {announcements.map((anc) => (
-                  <div key={anc.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                  <div key={anc.id} style={{ background: selectedAnnouncementIds.includes(anc.id) ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem' }}>
+                    <input 
+                      type="checkbox"
+                      checked={selectedAnnouncementIds.includes(anc.id)}
+                      onChange={() => toggleSelection(anc.id, selectedAnnouncementIds, setSelectedAnnouncementIds)}
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444', flexShrink: 0 }}
+                    />
+
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.875rem', color: '#fff' }}>{anc.content}</div>
                       <span className={`badge ${anc.active ? 'badge-green' : 'badge'}`} style={{ marginTop: '0.35rem', fontSize: '0.65rem' }}>
@@ -1207,16 +1398,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </p>
               </div>
 
-              <button className="btn btn-primary btn-sm" onClick={() => setIsGalleryModalOpen(true)}>
-                <Plus size={16} /> Add Photo to Memory Globe
-              </button>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => toggleSelectAll(galleryPhotos.map(p => p.id), selectedGalleryIds, setSelectedGalleryIds)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedGalleryIds.length === galleryPhotos.length && galleryPhotos.length > 0}
+                    readOnly
+                    style={{ cursor: 'pointer', accentColor: '#ef4444' }}
+                  />
+                  Select All Photos
+                </button>
+
+                {selectedGalleryIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteGalleryPhotos} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedGalleryIds.length})
+                  </button>
+                )}
+
+                <button className="btn btn-primary btn-sm" onClick={() => setIsGalleryModalOpen(true)}>
+                  <Plus size={16} /> Add Photo to Memory Globe
+                </button>
+              </div>
             </div>
 
             {galleryPhotos.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
                 {galleryPhotos.map((photo) => (
-                  <div key={photo.id} className="glass-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <div key={photo.id} className="glass-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', border: selectedGalleryIds.includes(photo.id) ? '2px solid #ef4444' : undefined }}>
                     <div style={{ height: '170px', position: 'relative', overflow: 'hidden', background: '#0a0e1a' }}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedGalleryIds.includes(photo.id)}
+                        onChange={() => toggleSelection(photo.id, selectedGalleryIds, setSelectedGalleryIds)}
+                        style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10, cursor: 'pointer', width: '18px', height: '18px', accentColor: '#ef4444' }}
+                      />
                       <img
                         src={photo.imageUrl}
                         alt={photo.title}
@@ -1270,14 +1489,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </p>
               </div>
 
-              <button className="btn btn-primary btn-sm" onClick={handleOpenAddCrewModal}>
-                <Plus size={16} /> Add New Crew Member
-              </button>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => toggleSelectAll(crewMembers.map(c => c.id), selectedCrewIds, setSelectedCrewIds)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCrewIds.length === crewMembers.length && crewMembers.length > 0}
+                    readOnly
+                    style={{ cursor: 'pointer', accentColor: '#ef4444' }}
+                  />
+                  Select All Crew
+                </button>
+
+                {selectedCrewIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteCrewMembers} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedCrewIds.length})
+                  </button>
+                )}
+
+                <button className="btn btn-primary btn-sm" onClick={handleOpenAddCrewModal}>
+                  <Plus size={16} /> Add New Crew Member
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
               {crewMembers.map((member) => (
-                <div key={member.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+                <div key={member.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative', border: selectedCrewIds.includes(member.id) ? '2px solid #ef4444' : undefined }}>
+                  <input 
+                    type="checkbox"
+                    checked={selectedCrewIds.includes(member.id)}
+                    onChange={() => toggleSelection(member.id, selectedCrewIds, setSelectedCrewIds)}
+                    style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, cursor: 'pointer', width: '18px', height: '18px', accentColor: '#ef4444' }}
+                  />
+
                   <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #00f2fe', marginBottom: '1rem', background: '#0a0f1d' }}>
                     <img src={member.img} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
@@ -1324,6 +1572,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {selectedFeedbackIds.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={handleBulkDeleteFeedback} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Trash2 size={14} /> Delete Selected ({selectedFeedbackIds.length})
+                  </button>
+                )}
+
                 <select 
                   className="form-select"
                   style={{ width: 'auto', minWidth: '200px' }}
@@ -1377,6 +1631,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '1rem', width: '40px', textAlign: 'center' }}>
+                      {(() => {
+                        const filtered = feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter);
+                        return (
+                          <input 
+                            type="checkbox"
+                            checked={selectedFeedbackIds.length === filtered.length && filtered.length > 0}
+                            onChange={() => toggleSelectAll(filtered.map(f => f.id), selectedFeedbackIds, setSelectedFeedbackIds)}
+                            style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                            title="Select All Matching Feedback"
+                          />
+                        );
+                      })()}
+                    </th>
                     <th style={{ padding: '1rem' }}>Event Title</th>
                     <th style={{ padding: '1rem' }}>Student Details</th>
                     <th style={{ padding: '1rem' }}>Overall Rating</th>
@@ -1388,7 +1656,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tbody>
                   {(feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter)).length > 0 ? (
                     (feedbackEventFilter === 'All' ? feedbackList : feedbackList.filter(f => f.eventId === feedbackEventFilter)).map((fb) => (
-                      <tr key={fb.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <tr key={fb.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: selectedFeedbackIds.includes(fb.id) ? 'rgba(239, 68, 68, 0.08)' : undefined }}>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox"
+                            checked={selectedFeedbackIds.includes(fb.id)}
+                            onChange={() => toggleSelection(fb.id, selectedFeedbackIds, setSelectedFeedbackIds)}
+                            style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ef4444' }}
+                          />
+                        </td>
                         <td style={{ padding: '1rem', fontWeight: 600, color: '#00f2fe', maxWidth: '180px' }}>
                           <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {fb.eventTitle}
@@ -1447,7 +1723,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                         No feedback submissions received yet.
                       </td>
                     </tr>
