@@ -94,20 +94,64 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     cooldownRef.current = true;
     setTimeout(() => { cooldownRef.current = false; }, 2500);
 
-    let code = raw.trim();
-    // Strip JSON wrapper if present: {"ticketCode":"GITS-XXXX",...}
-    try {
-      const parsed = JSON.parse(code);
-      if (parsed?.ticketCode) code = parsed.ticketCode;
-    } catch { /* plain text code */ }
+    const rawCode = raw.trim();
+    let ticketParam = '';
+    let rollParam = '';
+    let grParam = '';
 
-    const reg = registrations.find(
-      r => r.ticketCode === code || r.rollNo === code
-    );
+    // If QR code is a URL (e.g. https://gits-dmce.vercel.app/?verify=1&ticket=3114&roll=26&gr=...)
+    if (rawCode.includes('?') || rawCode.startsWith('http://') || rawCode.startsWith('https://')) {
+      try {
+        const urlStr = rawCode.startsWith('http') ? rawCode : `https://dummy.com/${rawCode.startsWith('?') ? rawCode : '?' + rawCode}`;
+        const parsedUrl = new URL(urlStr);
+        ticketParam = parsedUrl.searchParams.get('ticket') || '';
+        rollParam = parsedUrl.searchParams.get('roll') || '';
+        grParam = parsedUrl.searchParams.get('gr') || '';
+      } catch { /* ignore URL parse error */ }
+    }
+
+    // Also check JSON format if applicable
+    try {
+      const parsedJson = JSON.parse(rawCode);
+      if (parsedJson?.ticketCode) ticketParam = parsedJson.ticketCode;
+      if (parsedJson?.rollNo) rollParam = parsedJson.rollNo;
+      if (parsedJson?.grNo) grParam = parsedJson.grNo;
+    } catch { /* ignore JSON parse error */ }
+
+    // Match against registrations list
+    const reg = registrations.find(r => {
+      if (!r) return false;
+      const tCode = (r.ticketCode || '').trim().toLowerCase();
+      const rNo   = (r.rollNo || '').trim().toLowerCase();
+      const gNo   = (r.grNo || '').trim().toLowerCase();
+
+      const targetRaw = rawCode.toLowerCase();
+      const targetTicket = ticketParam.toLowerCase();
+      const targetRoll = rollParam.toLowerCase();
+      const targetGr = grParam.toLowerCase();
+
+      // Direct ticket code match (or URL ticket param match)
+      if (tCode) {
+        if (tCode === targetRaw || tCode === targetTicket) return true;
+        if (targetTicket && (tCode.includes(targetTicket) || targetTicket.includes(tCode))) return true;
+        if (targetRaw.includes(tCode)) return true;
+      }
+      // Roll number match
+      if (rNo) {
+        if (rNo === targetRaw || rNo === targetRoll) return true;
+      }
+      // GR number match
+      if (gNo) {
+        if (gNo === targetRaw || gNo === targetGr) return true;
+      }
+      return false;
+    });
 
     if (!reg) {
       if (soundEnabled) playChime('error');
-      setScanResult({ type: 'notfound', code });
+      // Show cleaner error message for URLs
+      const displayCode = ticketParam ? `Ticket: ${ticketParam}` : (rawCode.length > 40 ? `${rawCode.slice(0, 37)}...` : rawCode);
+      setScanResult({ type: 'notfound', code: displayCode });
       return;
     }
 
