@@ -55,6 +55,33 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   if (!event) return null;
 
   const isInterCollege = event.eventScope === 'Inter-College';
+  const isTeamEvent = event.eventType === 'Team';
+  const minTeamSize = event.minTeamSize || 2;
+  const maxTeamSize = event.maxTeamSize || 4;
+
+  const [teamName, setTeamName] = useState('');
+  const [teammates, setTeammates] = useState<{ name: string; rollNo: string; email: string }[]>(() => {
+    const initialCount = Math.max(1, minTeamSize - 1);
+    return Array.from({ length: initialCount }, () => ({ name: '', rollNo: '', email: '' }));
+  });
+
+  const handleAddTeammate = () => {
+    if (teammates.length + 1 < maxTeamSize) {
+      setTeammates([...teammates, { name: '', rollNo: '', email: '' }]);
+    }
+  };
+
+  const handleRemoveTeammate = (index: number) => {
+    if (teammates.length + 1 > minTeamSize) {
+      setTeammates(teammates.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleTeammateChange = (index: number, field: 'name' | 'rollNo' | 'email', value: string) => {
+    const updated = [...teammates];
+    updated[index][field] = value;
+    setTeammates(updated);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +93,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (isInterCollege && !formData.collegeName.trim()) {
       setError('Please enter your College / Institution Name for this Inter-College event.');
       return;
+    }
+
+    if (isTeamEvent) {
+      if (!teamName.trim()) {
+        setError('Please enter your Team Name.');
+        return;
+      }
+      if (teammates.length + 1 < minTeamSize) {
+        setError(`This team event requires a minimum of ${minTeamSize} members (including Team Leader).`);
+        return;
+      }
+      if (teammates.some(t => !t.name.trim())) {
+        setError('Please fill in full names for all added team members.');
+        return;
+      }
     }
 
     const isPaidEvent = event.isPaid || (event.fee && event.fee !== 'Free');
@@ -105,7 +147,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         div: formData.div.trim().toUpperCase(),
         collegeName: isInterCollege ? formData.collegeName.trim() : 'Datta Meghe College of Engineering (DMCE)',
         specialRequests: formData.specialRequests.trim(),
-        paymentTransactionId: formData.paymentTransactionId.trim()
+        paymentTransactionId: formData.paymentTransactionId.trim(),
+        teamName: isTeamEvent ? teamName.trim() : undefined,
+        teamMembers: isTeamEvent ? teammates.map(t => ({ name: t.name.trim(), rollNo: t.rollNo.trim(), email: t.email.trim() })) : undefined
       });
 
       // Fire festive confetti!
@@ -324,12 +368,101 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <label className="form-label">Dietary Preference / Notes (Optional)</label>
             <input 
               type="text"
-              placeholder="e.g. Vegetarian meal, team name for hackathon..."
+              placeholder="e.g. Vegetarian meal, extra requirement..."
               className="form-input"
               value={formData.specialRequests}
               onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
             />
           </div>
+
+          {/* Team Registration Section */}
+          {event.eventType === 'Team' && (
+            <div className="glass-card" style={{ padding: '1.25rem', marginTop: '1.25rem', marginBottom: '1.25rem', border: '1px solid rgba(0, 242, 254, 0.4)', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.9rem', color: '#00f2fe', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  👥 Team Registration Details
+                </span>
+                <span className="badge badge-cyan" style={{ fontSize: '0.72rem' }}>
+                  Team Size: {teammates.length + 1} / {maxTeamSize} (Min: {minTeamSize})
+                </span>
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.4 }}>
+                You are registering as the <strong>Team Leader (Member 1)</strong>. Add your teammate details below (Min: {minTeamSize}, Max Group Limit: {maxTeamSize} members).
+              </div>
+
+              {/* Team Name Input */}
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Team Name *</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. Cyber Knights, HackSquad 2026..."
+                  className="form-input"
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                />
+              </div>
+
+              {/* Teammates List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {teammates.map((teammate, idx) => (
+                  <div key={idx} style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.85rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399' }}>
+                        👤 Member {idx + 2} {idx + 1 < minTeamSize ? '*' : '(Optional)'}
+                      </span>
+                      {teammates.length + 1 > minTeamSize && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTeammate(idx)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                        >
+                          <X size={14} /> Remove Member
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <input 
+                          type="text"
+                          required
+                          placeholder={`Member ${idx + 2} Full Name *`}
+                          className="form-input"
+                          style={{ fontSize: '0.825rem', padding: '0.45rem 0.75rem' }}
+                          value={teammate.name}
+                          onChange={(e) => handleTeammateChange(idx, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <input 
+                          type="text"
+                          placeholder="Roll No / Email (Optional)"
+                          className="form-input"
+                          style={{ fontSize: '0.825rem', padding: '0.45rem 0.75rem' }}
+                          value={teammate.rollNo}
+                          onChange={(e) => handleTeammateChange(idx, 'rollNo', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Teammate Button */}
+              {teammates.length + 1 < maxTeamSize && (
+                <button
+                  type="button"
+                  onClick={handleAddTeammate}
+                  className="btn btn-secondary btn-sm"
+                  style={{ marginTop: '0.85rem', width: '100%', border: '1px dashed rgba(0, 242, 254, 0.4)', color: '#00f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                >
+                  + Add Member {teammates.length + 2} (Max: {maxTeamSize})
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Paid Event Payment QR Section */}
           {(event.isPaid || (event.fee && event.fee !== 'Free')) && (

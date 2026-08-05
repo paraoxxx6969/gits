@@ -106,6 +106,15 @@ export const EventCard: React.FC<EventCardProps> = ({
             <span className={`badge ${getCategoryBadgeClass(event.category)}`}>
               <Tag size={10} /> {event.category}
             </span>
+            {event.eventType === 'Team' ? (
+              <span className="badge badge-green" style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399' }}>
+                👥 Team ({event.minTeamSize || 2}-{event.maxTeamSize || 4})
+              </span>
+            ) : (
+              <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>
+                👤 Solo
+              </span>
+            )}
             {(event.isPaid || (event.fee && event.fee !== 'Free')) && (
               <span 
                 className="badge" 

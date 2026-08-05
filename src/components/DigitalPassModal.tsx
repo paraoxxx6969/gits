@@ -157,6 +157,23 @@ export const DigitalPassModal: React.FC<DigitalPassModalProps> = ({
               </div>
             </div>
 
+            {/* Team Pass Details (if team event) */}
+            {registration.teamName && (
+              <div style={{ background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.3)', padding: '0.85rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#00f2fe', marginBottom: '0.35rem' }}>
+                  👥 Team Pass: {registration.teamName}
+                </div>
+                {registration.teamMembers && registration.teamMembers.length > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                    <div style={{ color: '#34d399', fontWeight: 600 }}>• Team Leader: {registration.studentName}</div>
+                    {registration.teamMembers.map((m, idx) => (
+                      <div key={idx}>• Teammate {idx + 2}: {m.name} {m.rollNo ? `(Roll: ${m.rollNo})` : ''}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* QR Code + Ticket Code Box */}
             <div style={{
               display: 'flex',

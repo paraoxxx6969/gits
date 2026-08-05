@@ -219,6 +219,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     paymentQrImage: '',
     upiId: '',
     eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
+    eventType: 'Solo' as 'Solo' | 'Team',
+    minTeamSize: 2,
+    maxTeamSize: 4,
     speakerName: 'GITS Tech Lead',
     speakerRole: 'Software Architect',
     speakerOrg: 'GITS Advisory',
@@ -284,6 +287,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       paymentQrImage: '',
       upiId: '',
       eventScope: 'Intra-College' as 'Intra-College' | 'Inter-College',
+      eventType: 'Solo' as 'Solo' | 'Team',
+      minTeamSize: 2,
+      maxTeamSize: 4,
       speakerName: 'Dr. Rajesh Sharma',
       speakerRole: 'Faculty Lead',
       speakerOrg: 'IT Dept',
@@ -317,6 +323,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       paymentQrImage: evt.paymentQrImage || '',
       upiId: evt.upiId || '',
       eventScope: evt.eventScope || 'Intra-College',
+      eventType: evt.eventType || 'Solo',
+      minTeamSize: evt.minTeamSize || 2,
+      maxTeamSize: evt.maxTeamSize || 4,
       speakerName: evt.speaker?.name || '',
       speakerRole: evt.speaker?.role || '',
       speakerOrg: evt.speaker?.organization || '',
@@ -353,6 +362,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       feedbackEnabled: true,
       feedbackQuestions: eventForm.feedbackQuestions,
       eventScope: eventForm.eventScope,
+      eventType: eventForm.eventType,
+      minTeamSize: Number(eventForm.minTeamSize) || 2,
+      maxTeamSize: Number(eventForm.maxTeamSize) || 4,
       speaker: {
         name: eventForm.speakerName,
         role: eventForm.speakerRole,
@@ -957,7 +969,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </td>
 
                       <td style={{ padding: '1rem' }}>
-                        <span className="badge badge-purple">{evt.category}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
+                          <span className="badge badge-purple">{evt.category}</span>
+                          {evt.eventType === 'Team' ? (
+                            <span className="badge badge-green" style={{ fontSize: '0.68rem' }}>
+                              👥 Team ({evt.minTeamSize || 2}-{evt.maxTeamSize || 4})
+                            </span>
+                          ) : (
+                            <span className="badge badge-cyan" style={{ fontSize: '0.68rem' }}>
+                              👤 Solo Event
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td style={{ padding: '1rem' }}>
@@ -1125,6 +1148,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {reg.paymentTransactionId && (
                             <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: '0.2rem', fontFamily: 'var(--font-code)' }}>
                               💳 Txn Ref: {reg.paymentTransactionId}
+                            </div>
+                          )}
+                          {reg.teamName && (
+                            <div style={{ marginTop: '0.4rem', background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.3)', borderRadius: '6px', padding: '0.35rem 0.5rem', maxWidth: '240px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#00f2fe' }}>
+                                👥 Team: {reg.teamName}
+                              </div>
+                              {reg.teamMembers && reg.teamMembers.length > 0 && (
+                                <div style={{ fontSize: '0.7rem', color: '#cbd5e1', marginTop: '0.2rem' }}>
+                                  {reg.teamMembers.map((m, mIdx) => (
+                                    <div key={mIdx}>• Member {mIdx + 2}: {m.name} {m.rollNo ? `(Roll: ${m.rollNo})` : ''}</div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
@@ -1850,8 +1887,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Event Pricing / Fee Type *</label>
                   <select 
                     className="form-select"
@@ -1871,7 +1908,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 {eventForm.isPaid ? (
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Registration Fee Amount *</label>
                     <input 
                       type="text" 
@@ -1883,7 +1920,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                   </div>
                 ) : (
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Event Scope *</label>
                     <select 
                       className="form-select"
@@ -1894,6 +1931,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <option value="Inter-College">🌐 Inter-College (Open to All)</option>
                     </select>
                   </div>
+                )}
+              </div>
+
+              {/* Event Format & Group Limit */}
+              <div style={{ display: 'grid', gridTemplateColumns: eventForm.eventType === 'Team' ? '1fr 1fr 1fr' : '1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Participation Format *</label>
+                  <select 
+                    className="form-select"
+                    value={eventForm.eventType}
+                    onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value as 'Solo' | 'Team' })}
+                  >
+                    <option value="Solo">👤 Solo Event (Individual Entry)</option>
+                    <option value="Team">👥 Team / Group Event (Team Entry)</option>
+                  </select>
+                </div>
+
+                {eventForm.eventType === 'Team' && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Min Team Members *</label>
+                      <input 
+                        type="number" 
+                        min={2} 
+                        max={eventForm.maxTeamSize} 
+                        className="form-input" 
+                        value={eventForm.minTeamSize}
+                        onChange={(e) => setEventForm({ ...eventForm, minTeamSize: Math.max(2, Number(e.target.value)) })}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Max Group Limit *</label>
+                      <input 
+                        type="number" 
+                        min={eventForm.minTeamSize} 
+                        max={20} 
+                        className="form-input" 
+                        value={eventForm.maxTeamSize}
+                        onChange={(e) => setEventForm({ ...eventForm, maxTeamSize: Math.max(eventForm.minTeamSize, Number(e.target.value)) })}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 

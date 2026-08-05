@@ -47,7 +47,16 @@ export interface ClubEvent {
   schedule: ScheduleItem[];
   organizer: string;
   eventScope?: 'Intra-College' | 'Inter-College';
+  eventType?: 'Solo' | 'Team';
+  minTeamSize?: number;
+  maxTeamSize?: number;
   createdAt: string;
+}
+
+export interface TeamMember {
+  name: string;
+  rollNo?: string;
+  email?: string;
 }
 
 export interface FeedbackQuestion {
@@ -101,6 +110,8 @@ export interface EventRegistration {
   paymentTransactionId?: string;
   paymentProofUrl?: string;
   specialRequests?: string;
+  teamName?: string;
+  teamMembers?: TeamMember[];
 }
 
 export interface CrewMember {
