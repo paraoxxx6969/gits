@@ -180,31 +180,45 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     }
   };
 
-  // Stop camera stream
-  const stopCamera = () => {
+  // Stop camera stream fully (async-safe)
+  const stopCamera = async () => {
     if (html5QrcodeRef.current) {
-      html5QrcodeRef.current.stop().then(() => {
-        html5QrcodeRef.current?.clear();
+      try {
+        const state = html5QrcodeRef.current.getState();
+        // State 2 = SCANNING, only stop if actively scanning
+        if (state === 2) {
+          await html5QrcodeRef.current.stop();
+        }
+        html5QrcodeRef.current.clear();
+      } catch {
+        // Ignore errors from already-stopped or unmounted scanner
+      } finally {
+        html5QrcodeRef.current = null;
         setScannerActive(false);
-      }).catch(() => {
-        setScannerActive(false);
-      });
+      }
     }
+  };
+
+  // Handle close: stop camera first, THEN close modal
+  const handleClose = async () => {
+    await stopCamera();
+    setLastScannedResult(null);
+    onClose();
   };
 
   useEffect(() => {
     if (isOpen) {
-      // Small timeout to allow DOM container element to mount
       const timer = setTimeout(() => {
         startCamera();
-      }, 300);
+      }, 350);
       return () => {
         clearTimeout(timer);
-        stopCamera();
+        // Best-effort stop on unmount
+        if (html5QrcodeRef.current) {
+          html5QrcodeRef.current.stop().catch(() => {});
+          html5QrcodeRef.current = null;
+        }
       };
-    } else {
-      stopCamera();
-      setLastScannedResult(null);
     }
   }, [isOpen]);
 
@@ -261,7 +275,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleClose}
               style={{ background: 'rgba(255, 255, 255, 0.08)', border: 'none', color: '#fff', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <X size={18} />
@@ -387,7 +401,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
         {/* Modal Footer */}
         <div style={{ padding: '0.85rem 1.25rem', background: 'rgba(15, 23, 42, 0.8)', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={handleClose}>
             Done Scanning
           </button>
         </div>
