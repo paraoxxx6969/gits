@@ -119,6 +119,10 @@ export interface CrewMember {
   name: string;
   role: string;
   img: string;
+  linkedin?: string;
+  github?: string;
+  bio?: string;
+  features?: string[];
   createdAt?: string;
 }
 

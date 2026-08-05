@@ -239,7 +239,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [crewForm, setCrewForm] = useState({
     name: '',
     role: '',
-    img: ''
+    img: '',
+    linkedin: '',
+    github: '',
+    bio: ''
   });
 
   // Memory Form state
@@ -744,7 +747,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCrewForm({
       name: '',
       role: '',
-      img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+      img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      linkedin: '',
+      github: '',
+      bio: ''
     });
     setIsCrewModalOpen(true);
   };
@@ -754,7 +760,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCrewForm({
       name: member.name,
       role: member.role,
-      img: member.img
+      img: member.img,
+      linkedin: member.linkedin || '',
+      github: member.github || '',
+      bio: member.bio || ''
     });
     setIsCrewModalOpen(true);
   };
@@ -766,18 +775,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
+    const payload = {
+      name: crewForm.name.trim(),
+      role: crewForm.role.trim(),
+      img: crewForm.img.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      linkedin: crewForm.linkedin.trim(),
+      github: crewForm.github.trim(),
+      bio: crewForm.bio.trim()
+    };
+
     if (editingCrewId) {
-      StorageService.updateCrewMember(editingCrewId, {
-        name: crewForm.name.trim(),
-        role: crewForm.role.trim(),
-        img: crewForm.img.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-      });
+      StorageService.updateCrewMember(editingCrewId, payload);
     } else {
-      StorageService.addCrewMember({
-        name: crewForm.name.trim(),
-        role: crewForm.role.trim(),
-        img: crewForm.img.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-      });
+      StorageService.addCrewMember(payload);
     }
 
     setIsCrewModalOpen(false);
@@ -2447,6 +2457,111 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsGalleryModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Add Photo to Globe</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT CREW MEMBER */}
+      {isCrewModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsCrewModalOpen(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={20} color="#00f2fe" /> {editingCrewId ? 'Edit Crew Member Details' : 'Add New Crew Member'}
+              </h3>
+              <button onClick={() => setIsCrewModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCrewMember} style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Full Name *</label>
+                  <input 
+                    type="text" required className="form-input" placeholder="e.g. Aarav Mehta"
+                    value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Role / Designation *</label>
+                  <input 
+                    type="text" required className="form-input" placeholder="e.g. President · Lead Coordinator"
+                    value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Social Links: LinkedIn & GitHub */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: '#60a5fa' }}>LinkedIn Profile URL</label>
+                  <input 
+                    type="url" className="form-input" placeholder="https://linkedin.com/in/username"
+                    value={crewForm.linkedin} onChange={(e) => setCrewForm({ ...crewForm, linkedin: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ color: '#c084fc' }}>GitHub Profile URL</label>
+                  <input 
+                    type="url" className="form-input" placeholder="https://github.com/username"
+                    value={crewForm.github} onChange={(e) => setCrewForm({ ...crewForm, github: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Short Bio / Achievements</label>
+                <textarea 
+                  rows={2} className="form-textarea" placeholder="Brief summary displayed on card flip back side..."
+                  value={crewForm.bio} onChange={(e) => setCrewForm({ ...crewForm, bio: e.target.value })}
+                />
+              </div>
+
+              {/* Photo Upload / Image URL */}
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Upload size={14} color="#00f2fe" /> Select Profile Photo from Device
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="form-input" 
+                  onChange={handleCrewImageUpload} 
+                  style={{ padding: '0.4rem' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <ImageIcon size={14} color="#00f2fe" /> OR Photo Web URL
+                </label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="https://images.unsplash.com/..."
+                  value={crewForm.img} 
+                  onChange={(e) => setCrewForm({ ...crewForm, img: e.target.value })}
+                />
+              </div>
+
+              {crewForm.img && (
+                <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '10px' }}>
+                  <img src={crewForm.img} alt="Preview" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00f2fe' }} />
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{crewForm.name || 'Member Name'}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#00f2fe' }}>{crewForm.role || 'Member Role'}</div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsCrewModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">{editingCrewId ? 'Save Member Changes' : 'Add Crew Member'}</button>
               </div>
             </form>
           </div>

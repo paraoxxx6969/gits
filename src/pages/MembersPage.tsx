@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import type { CrewMember } from '../types';
+import CardFlip from '../components/ui/flip-card';
 import './MembersPage.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -282,14 +283,10 @@ export const MembersPage: React.FC<MembersPageProps> = ({ crewMembers }) => {
           <p>Every person you see here drives every event we run. No middle layer, no handoffs to strangers — just direct work with the people doing it.</p>
         </div>
 
-        <div className="m-team-grid" ref={teamGridRef}>
+        <div className="m-team-grid" ref={teamGridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem', justifyContent: 'center', alignItems: 'center', justifyItems: 'center' }}>
           {MEMBERS.map((member) => (
-            <div className="m-t-card" key={member.id || member.name}>
-              <img src={member.img} alt={member.name} />
-              <div className="m-t-meta">
-                <div className="m-nm">{member.name}</div>
-                <div className="m-rl">{member.role}</div>
-              </div>
+            <div className="m-t-card" key={member.id || member.name} style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <CardFlip member={member} />
             </div>
           ))}
         </div>

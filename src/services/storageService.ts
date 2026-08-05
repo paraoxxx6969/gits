@@ -276,6 +276,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Dr. Rajesh Sharma',
     role: 'Faculty Advisor',
     img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/rajesh-sharma-dmce',
+    github: 'https://github.com/dr-rajesh-sharma',
+    bio: 'Professor & Head of Department. 15+ years inspiring tech innovators at DMCE.',
+    features: ['Academic Advisory', 'Research & AI', 'Student Mentorship'],
     createdAt: new Date().toISOString()
   },
   {
@@ -283,6 +287,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Aarav Mehta',
     role: 'President · Lead Coordinator',
     img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/aaravmehta-gits',
+    github: 'https://github.com/aaravmehta-dev',
+    bio: 'Fullstack Systems Architect & Hackathon Organising Chair. Tech enthusiast.',
+    features: ['Hackathon Management', 'Fullstack React/Node', 'Team Leadership'],
     createdAt: new Date().toISOString()
   },
   {
@@ -290,6 +298,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Priya Sundaram',
     role: 'Vice President · Web Lead',
     img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/priyasundaram-tech',
+    github: 'https://github.com/priyasun-codes',
+    bio: 'Frontend Specialist & UI/UX Perfectionist. Passionate about modern web performance.',
+    features: ['Next.js & Vite', 'Tailwind & Motion', 'Design Systems'],
     createdAt: new Date().toISOString()
   },
   {
@@ -297,6 +309,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Siddharth Patel',
     role: 'CyberSec Wing Head',
     img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/siddharth-patel-ctf',
+    github: 'https://github.com/sid-security',
+    bio: 'Ethical Hacker & CTF Champion. Specialist in penetration testing & cloud security.',
+    features: ['Network Penetration', 'Capture The Flag', 'Linux Hardening'],
     createdAt: new Date().toISOString()
   },
   {
@@ -304,6 +320,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Neha Kapoor',
     role: 'AI & ML Wing Lead',
     img: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/nehakapoor-ai',
+    github: 'https://github.com/neha-ml-lab',
+    bio: 'Deep Learning Researcher & PyTorch enthusiast building intelligent agents.',
+    features: ['PyTorch & TensorFlow', 'NLP & LLMs', 'Computer Vision'],
     createdAt: new Date().toISOString()
   },
   {
@@ -311,6 +331,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Ravi Joshi',
     role: 'Cloud & DevOps Coordinator',
     img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/ravijoshi-devops',
+    github: 'https://github.com/ravijoshi-cloud',
+    bio: 'AWS Certified Cloud Solutions Architect & Kubernetes Operator.',
+    features: ['AWS & Docker', 'Kubernetes Pipelines', 'CI/CD Automation'],
     createdAt: new Date().toISOString()
   },
   {
@@ -318,6 +342,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Ananya Deshmukh',
     role: 'Events & PR Lead',
     img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/ananyadeshmukh-pr',
+    github: 'https://github.com/ananya-events',
+    bio: 'Community Builder & Public Speaker. Managing industrial tech collaborations.',
+    features: ['Event Operations', 'Sponsorships', 'Public Relations'],
     createdAt: new Date().toISOString()
   },
   {
@@ -325,6 +353,10 @@ const DEFAULT_CREW_MEMBERS: CrewMember[] = [
     name: 'Kavya Iyer',
     role: 'Design & Media Head',
     img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=faces&q=80',
+    linkedin: 'https://linkedin.com/in/kavyaiyer-design',
+    github: 'https://github.com/kavya-creatives',
+    bio: 'Product Designer & Brand Strategist. Crafting visual identities for GITS.',
+    features: ['Figma 3D Design', 'Brand Identity', 'Motion Design'],
     createdAt: new Date().toISOString()
   }
 ];
